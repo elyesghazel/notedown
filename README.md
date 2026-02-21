@@ -1,36 +1,99 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Notedown
 
-## Getting Started
+A powerful, high-performance Markdown Note-Taking Platform designed for speed, organization, and a premium editing experience.
 
-First, run the development server:
+![Notedown Interface](https://via.placeholder.com/800x400?text=Notedown+Markdown+Editor)
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## ✨ Core Features
+
+### 🚀 Advanced Editing & Preview
+- **Interactive Image Resizing**: Hover over an image in the preview pane and drag the blue handle to resize. Your Markdown code updates automatically!
+- **Dual-Pane Interface**: Edit in real-time with GFM (GitHub Flavored Markdown) support.
+- **Image Paste & Drag-and-Drop**: Paste images directly into the editor for instant upload and embedding.
+- **Find in File (Ctrl+F)**: Search for text within the current document with a sleek, distraction-free widget.
+
+### 🔍 Search & Quick Actions
+- **Global Full-Text Search (Ctrl+K)**: Search through file names AND file contents across all your workspaces, complete with context snippets.
+- **Power Command Palette (Ctrl+Shift+P)**: Access system actions like "Quick Note", "Home", and "Sign Out" instantly.
+- **Quick Capture**: A dedicated button to jot down timestamped notes instantly in your private Inbox.
+
+### 📁 Structure & Organization
+- **Multi-Level Hierarchy**: Workspaces > Spaces > Folders > Documents.
+- **Intuitive Sidebar**: Drag-and-drop hierarchy with right-click context menus for all file operations (Rename, Delete, New Folder, New Doc).
+- **Public Publishing**: Publish your notes to a unique, shareable URL with one click.
+- **PDF Export**: High-quality PDF generation powered by Puppeteer.
+
+## 🛠 Tech Stack
+- **Frontend**: Next.js 15+, React, Tailwind CSS, Lucide Icons.
+- **Editor**: ReactMarkdown, Remark-GFM, Rehype-Highlight (Highlight.js).
+- **Backend**: Next.js API Routes, BcryptJS for secure hashing, JWT via Jose.
+- **Data**: Local file-based JSON storage (Zero external DB dependency required for small-medium teams).
+- **Containerization**: Docker & Docker Compose.
+
+## 🐳 Getting Started (Docker)
+
+The easiest way to deploy Notedown is using Docker Compose.
+
+1. **Clone the repository**:
+   ```bash
+   git clone https://github.com/elyesghazel/notedown.git
+   cd notedown
+   ```
+
+2. **Start the application**:
+   ```bash
+   docker compose up -d --build
+   ```
+
+3. **Access the app**:
+   Open `http://localhost:3000` in your browser.
+
+### Data Persistence
+Notedown is configured to persist all your data and uploaded images in two local directories:
+- `data_storage/`: Stores your JSON "databases" (users, workspaces, notes).
+- `uploads_storage/`: Stores all pasted and uploaded images.
+
+## 💻 Local Development
+
+1. **Install dependencies**:
+   ```bash
+   npm install
+   ```
+
+2. **Run the development server**:
+   ```bash
+   npm run dev
+   ```
+
+3. **Build for production**:
+   ```bash
+   npm run build
+   npm start
+   ```
+
+## ⌨️ Keyboard Shortcuts
+
+| Shortcut | Action |
+| --- | --- |
+| `Ctrl+K` / `Cmd+K` | Open Global Search |
+| `Ctrl+Shift+P` / `Cmd+Shift+P` | Open Command Palette |
+| `Ctrl+F` / `Cmd+F` | Find in Current Document |
+| `Esc` | Close Dialogs / Find Widget |
+| `Enter` (in Find) | Next Match |
+| `Shift+Enter` (in Find) | Previous Match |
+
+## 📐 Image Resizing Syntax
+
+While you can use the interactive drag handles, you can also resize images manually using the alt-text pipe syntax:
+
+```markdown
+![My Image | 300](/uploads/example.png)      <!-- Lock width at 300px -->
+![My Image =400x300](/uploads/example.png)   <!-- Set width and height -->
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 📄 License
+This project is licensed under the [PolyForm Noncommercial License 1.0.0](LICENSE). 
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- **Permitted**: Personal use, self-hosting, research, and non-profit use.
+- **Prohibited**: Selling the software, charging for access, or any use primarily directed toward commercial advantage or monetary compensation.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
