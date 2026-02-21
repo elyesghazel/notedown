@@ -1,0 +1,14 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: markdown-notes
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./data_storage:/app/.data
+      - ./uploads_storage:/app/public/uploads
+    restart: always
+    environment:
+      - NODE_ENV=production
