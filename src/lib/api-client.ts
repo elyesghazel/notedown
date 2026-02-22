@@ -51,6 +51,12 @@ export const api = {
             body: JSON.stringify({ name }),
             headers: { "Content-Type": "application/json" },
         }),
+    moveFolder: (id: string, spaceId: string, parentFolderId: string | null) =>
+        fetch(`/api/folders/${id}`, {
+            method: "PATCH",
+            body: JSON.stringify({ spaceId, parentFolderId }),
+            headers: { "Content-Type": "application/json" },
+        }),
     deleteFolder: (id: string) => fetch(`/api/folders/${id}`, { method: "DELETE" }),
 
     // Documents
@@ -74,6 +80,12 @@ export const api = {
         fetch(`/api/documents/${id}`, {
             method: "PATCH",
             body: JSON.stringify({ name }),
+            headers: { "Content-Type": "application/json" },
+        }),
+    moveDocument: (id: string, spaceId: string, folderId: string | null) =>
+        fetch(`/api/documents/${id}`, {
+            method: "PATCH",
+            body: JSON.stringify({ spaceId, folderId }),
             headers: { "Content-Type": "application/json" },
         }),
     deleteDocument: (id: string) => fetch(`/api/documents/${id}`, { method: "DELETE" }),

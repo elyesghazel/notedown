@@ -42,11 +42,42 @@ export function SpaceItem({ space, folders, documents }: SpaceItemProps) {
 
     const tree = buildTree(space.id, folders, documents, null);
 
+    const handleDragOver = (e: React.DragEvent) => {
+        e.preventDefault();
+        e.currentTarget.classList.add("ring-2", "ring-primary");
+    };
+
+    const handleDragLeave = (e: React.DragEvent) => {
+        e.currentTarget.classList.remove("ring-2", "ring-primary");
+    };
+
+    const handleDrop = async (e: React.DragEvent) => {
+        e.preventDefault();
+        e.currentTarget.classList.remove("ring-2", "ring-primary");
+        try {
+            const data = JSON.parse(e.dataTransfer.getData("application/json"));
+            if (data.type === "doc") {
+                if (data.spaceId === space.id && data.folderId === null) return;
+                await api.moveDocument(data.id, space.id, null);
+                await mutate((key: string) => typeof key === "string" && key.startsWith("/api/documents"), undefined, { revalidate: true });
+            } else if (data.type === "folder") {
+                if (data.spaceId === space.id && data.parentFolderId === null) return;
+                await api.moveFolder(data.id, space.id, null);
+                await mutate((key: string) => typeof key === "string" && (key.startsWith("/api/folders") || key.startsWith("/api/documents")), undefined, { revalidate: true });
+            }
+        } catch (err) { }
+    };
+
     return (
         <div className="mb-6">
             <ContextMenu>
                 <ContextMenuTrigger asChild>
-                    <div className="group flex items-center justify-between px-2 py-1 hover:bg-muted/50 rounded-md cursor-pointer text-sm font-semibold mb-1">
+                    <div
+                        className="group flex items-center justify-between px-2 py-1 hover:bg-muted/50 rounded-md cursor-pointer text-sm font-semibold mb-1 transition-all"
+                        onDragOver={handleDragOver}
+                        onDragLeave={handleDragLeave}
+                        onDrop={handleDrop}
+                    >
                         <div className="flex items-center flex-1" onClick={() => setExpanded(!expanded)}>
                             {expanded ? <ChevronDown className="w-4 h-4 mr-1 text-muted-foreground" /> : <ChevronRight className="w-4 h-4 mr-1 text-muted-foreground" />}
                             {space.name}

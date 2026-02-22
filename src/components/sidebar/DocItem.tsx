@@ -11,6 +11,9 @@ import { api } from "@/lib/api-client";
 import { usePathname, useRouter } from "next/navigation";
 import { buildDocUrl, getFolderPath } from "@/lib/url";
 import Link from "next/link";
+import { useState } from "react";
+import { MoveDialog } from "../dialogs/MoveDialog";
+import { Forward } from "lucide-react";
 
 interface DocItemProps {
     node: TreeNodeType;
@@ -22,6 +25,7 @@ interface DocItemProps {
 export function DocItem({ node, space, folders, depth }: DocItemProps) {
     const router = useRouter();
     const pathname = usePathname();
+    const [moveOpen, setMoveOpen] = useState(false);
 
     const folderSlugs = node.folderId ? getFolderPath(node.folderId, folders) : [];
     const href = buildDocUrl(space.slug, folderSlugs, node.slug);
@@ -54,10 +58,18 @@ export function DocItem({ node, space, folders, depth }: DocItemProps) {
         }
     };
 
+    const handleDragStart = (e: React.DragEvent) => {
+        e.stopPropagation();
+        e.dataTransfer.setData("application/json", JSON.stringify({ type: "doc", id: node.id, spaceId: space.id, folderId: node.folderId }));
+        e.dataTransfer.effectAllowed = "move";
+    };
+
     return (
         <ContextMenu>
             <ContextMenuTrigger asChild>
                 <div
+                    draggable
+                    onDragStart={handleDragStart}
                     className={`group flex items-center justify-between rounded-md transition-colors text-sm mb-0.5 ${isActive ? "bg-primary/20 text-primary font-medium" : "hover:bg-muted/50"}`}
                     style={{ paddingLeft: `${depth * 16}px` }}
                 >
@@ -68,13 +80,16 @@ export function DocItem({ node, space, folders, depth }: DocItemProps) {
 
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 flex-shrink-0 ml-1">
+                            <Button variant="ghost" className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 shrink-0 ml-1">
                                 <MoreHorizontal className="w-4 h-4" />
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="start">
                             <DropdownMenuItem onClick={handleRename}>
                                 <Pencil className="w-4 h-4 mr-2" /> Rename
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => setMoveOpen(true)}>
+                                <Forward className="w-4 h-4 mr-2" /> Move To...
                             </DropdownMenuItem>
                             <DropdownMenuItem onClick={handleDelete} className="text-destructive">
                                 <Trash className="w-4 h-4 mr-2" /> Delete
@@ -87,10 +102,14 @@ export function DocItem({ node, space, folders, depth }: DocItemProps) {
                 <ContextMenuItem onClick={handleRename}>
                     <Pencil className="w-4 h-4 mr-2" /> Rename
                 </ContextMenuItem>
+                <ContextMenuItem onClick={() => setMoveOpen(true)}>
+                    <Forward className="w-4 h-4 mr-2" /> Move To...
+                </ContextMenuItem>
                 <ContextMenuItem onClick={handleDelete} className="text-destructive">
                     <Trash className="w-4 h-4 mr-2" /> Delete
                 </ContextMenuItem>
             </ContextMenuContent>
+            <MoveDialog open={moveOpen} onOpenChange={setMoveOpen} type="doc" itemId={node.id} itemName={node.name} currentSpaceId={space.id} />
         </ContextMenu>
     );
 }

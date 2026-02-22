@@ -1,8 +1,9 @@
 import fs from "fs";
 import path from "path";
+import os from "os";
 import { Workspace, Space, Folder, Document, PublishedDoc, User } from "./types";
 
-const DATA_DIR = path.join(process.cwd(), ".data");
+const DATA_DIR = process.env.DATA_DIR || path.join(os.homedir(), ".notedown-data");
 
 if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
 

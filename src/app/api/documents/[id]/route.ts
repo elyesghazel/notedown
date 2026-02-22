@@ -35,6 +35,14 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
         docs[idx].content = body.content;
     }
 
+    if (body.folderId !== undefined || body.folderId === null) {
+        docs[idx].folderId = body.folderId;
+    }
+
+    if (body.spaceId !== undefined) {
+        docs[idx].spaceId = body.spaceId;
+    }
+
     docs[idx].updatedAt = new Date().toISOString();
     saveDocuments(userId, docs);
 

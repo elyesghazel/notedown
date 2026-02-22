@@ -6,7 +6,7 @@ import { api } from "@/lib/api-client";
 import { SpaceItem } from "./SpaceItem";
 import { NewSpaceDialog } from "../dialogs/NewSpaceDialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Zap, Loader2, ChevronLeft, ChevronRight, RefreshCw, Menu, Search, HelpCircle } from "lucide-react";
+import { Zap, Loader2, ChevronLeft, ChevronRight, RefreshCw, Menu, Search, HelpCircle, Pencil, CheckSquare, Tag } from "lucide-react";
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,9 @@ import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/s
 import { SearchDialog } from "../dialogs/SearchDialog";
 
 export function Sidebar() {
+    const [mounted, setMounted] = useState(false);
+    useEffect(() => setMounted(true), []);
+
     const { data: workspaces } = useSWR("/api/workspaces", api.getWorkspaces);
 
     // Auto-create default workspace if empty
@@ -40,12 +43,13 @@ export function Sidebar() {
         activeWorkspaceId ? `/api/spaces?ws=${activeWorkspaceId}` : null,
         () => api.getSpaces(activeWorkspaceId!)
     );
+    const spaceIds = spaces?.map(s => s.id).join(",") || "";
     const { data: folders } = useSWR(
-        spaces ? "/api/folders" : null,
+        spaces ? `/api/folders?spaces=${spaceIds}` : null,
         () => Promise.all(spaces!.map(s => api.getFolders(s.id))).then(r => r.flat())
     );
     const { data: documents } = useSWR(
-        spaces ? "/api/documents" : null,
+        spaces ? `/api/documents?spaces=${spaceIds}` : null,
         () => Promise.all(spaces!.map(s => api.getDocuments(s.id))).then(r => r.flat())
     );
 
@@ -54,6 +58,14 @@ export function Sidebar() {
     const pathname = usePathname();
 
     if (pathname?.startsWith("/share")) return null;
+
+    if (!mounted) {
+        return (
+            <div className="hidden md:flex w-64 h-full border-r shrink-0 items-center justify-center bg-card">
+                <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+            </div>
+        );
+    }
 
     const handleReload = async () => {
         setReloading(true);
@@ -101,6 +113,17 @@ export function Sidebar() {
                         }}>
                             + Create Workspace
                         </DropdownMenuItem>
+                        {activeWorkspace && (
+                            <DropdownMenuItem onClick={async () => {
+                                const newName = prompt("Rename Workspace:", activeWorkspace.name);
+                                if (newName) {
+                                    await api.renameWorkspace(activeWorkspace.id, newName);
+                                    await mutate("/api/workspaces");
+                                }
+                            }}>
+                                <Pencil className="w-4 h-4 mr-2" /> Rename Workspace
+                            </DropdownMenuItem>
+                        )}
                     </DropdownMenuContent>
                 </DropdownMenu>
 
@@ -145,6 +168,14 @@ export function Sidebar() {
                 <Link href="/quick" className="flex items-center text-sm font-medium text-muted-foreground hover:text-foreground transition-colors p-2 rounded-md hover:bg-muted mb-1">
                     <Zap className="w-4 h-4 mr-2" />
                     Quick Capture
+                </Link>
+                <Link href="/tasks" className="flex items-center text-sm font-medium text-muted-foreground hover:text-foreground transition-colors p-2 rounded-md hover:bg-muted mb-1">
+                    <CheckSquare className="w-4 h-4 mr-2" />
+                    Tasks
+                </Link>
+                <Link href="/tags" className="flex items-center text-sm font-medium text-muted-foreground hover:text-foreground transition-colors p-2 rounded-md hover:bg-muted mb-1">
+                    <Tag className="w-4 h-4 mr-2" />
+                    Tags
                 </Link>
                 <Link href="/help" className="flex items-center text-sm font-medium text-muted-foreground hover:text-foreground transition-colors p-2 rounded-md hover:bg-muted mb-1">
                     <HelpCircle className="w-4 h-4 mr-2" />

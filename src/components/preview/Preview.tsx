@@ -136,7 +136,79 @@ export function Preview({ content, onContentChange }: PreviewProps) {
                             content={content}
                             onContentChange={onContentChange}
                         />
-                    )
+                    ),
+                    li: ({ node, className, children, ...props }: any) => {
+                        return <li className={className} data-line={node?.position?.start?.line} {...props}>{children}</li>;
+                    },
+                    input: ({ node, checked, type, ...props }: any) => {
+                        if (type === "checkbox") {
+                            // Find line dynamically from parental AST if exact AST is stripped
+                            const expectedLine = node?.position?.start?.line;
+                            // Remove disabled if present so we can click it
+                            const { disabled, className, ...rest } = props;
+                            return (
+                                <input
+                                    type="checkbox"
+                                    checked={checked}
+                                    {...rest}
+                                    onChange={(e) => {
+                                        if (!onContentChange) return;
+
+                                        // We first try to use the raw AST line number (fast & safe)
+                                        // or fetch it from the input's DOM context if we wrapped it
+                                        const syntheticNodeLine = expectedLine;
+
+                                        if (syntheticNodeLine) {
+                                            const lines = content.split("\n");
+                                            const lineIdx = syntheticNodeLine - 1;
+                                            if (lineIdx >= 0 && lineIdx < lines.length) {
+                                                const line = lines[lineIdx];
+                                                if (e.target.checked) {
+                                                    lines[lineIdx] = line.replace(/([ \t]*(?:[-*+]|\d+\.)\s+)\[ \]/, "$1[x]");
+                                                } else {
+                                                    lines[lineIdx] = line.replace(/([ \t]*(?:[-*+]|\d+\.)\s+)\[[xX]\]/, "$1[ ]");
+                                                }
+                                                const newContent = lines.join("\n");
+                                                if (newContent !== content) {
+                                                    onContentChange(newContent);
+                                                }
+                                            }
+                                        } else {
+                                            // Fallback for missing AST data: Mask code block texts so Regex skips them safely
+                                            const maskedContent = content
+                                                .replace(/```[\s\S]*?```/g, m => " ".repeat(m.length))
+                                                .replace(/`[^`\n]*`/g, m => " ".repeat(m.length));
+
+                                            // Since we do not have node.position, we need to locate this specific checkbox's index in the DOM
+                                            // We get it efficiently at click time relative to other rendered task checkboxes
+                                            const thisEventElement = e.target as HTMLInputElement;
+                                            const allCheckboxes = Array.from(document.querySelectorAll('.preview-checkbox'));
+                                            const thisIndex = allCheckboxes.indexOf(thisEventElement);
+
+                                            if (thisIndex === -1) return;
+
+                                            let matchCounter = 0;
+                                            const newContent = content.replace(/^([ \t]*(?:[-*+]|\d+\.)\s+)\[([ xX])\]/gm, (match, prefix, check, offset) => {
+                                                if (maskedContent.substring(offset, offset + match.length).trim() === "") {
+                                                    return match; // inside code block
+                                                }
+                                                if (matchCounter === thisIndex) {
+                                                    matchCounter++;
+                                                    return e.target.checked ? `${prefix}[x]` : `${prefix}[ ]`;
+                                                }
+                                                matchCounter++;
+                                                return match;
+                                            });
+
+                                            if (newContent !== content) onContentChange(newContent);
+                                        }
+                                    }}
+                                    className={`preview-checkbox mr-2 cursor-pointer w-4 h-4 text-primary bg-background border-primary/50 focus:ring-primary/20 accent-primary transition-colors rounded ${className || ""}`}
+                                />
+                            );
+                        }
+                        return <input type={type} checked={checked} {...props} />;
+                    }
                 }}
             >
                 {content}

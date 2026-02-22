@@ -5,6 +5,7 @@ import { useImagePaste } from "@/hooks/useImagePaste";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search, ChevronUp, ChevronDown, X } from "lucide-react";
+import { useSearchParams } from "next/navigation";
 
 interface EditorProps {
     content: string;
@@ -13,6 +14,7 @@ interface EditorProps {
 
 export function Editor({ content, onChange }: EditorProps) {
     const textareaRef = useRef<HTMLTextAreaElement>(null);
+    const searchParams = useSearchParams();
 
     const insertTextAtCursor = (text: string) => {
         const el = textareaRef.current;
@@ -34,6 +36,16 @@ export function Editor({ content, onChange }: EditorProps) {
     const [findOpen, setFindOpen] = useState(false);
     const [findText, setFindText] = useState("");
     const [matchIndex, setMatchIndex] = useState(0);
+
+    // Initial Search URL Payload parsing
+    useEffect(() => {
+        const q = searchParams.get("q");
+        if (q) {
+            setFindText(q);
+            setFindOpen(true);
+            setMatchIndex(0);
+        }
+    }, [searchParams]);
 
     const matches = useMemo(() => {
         if (!findText) return [];
@@ -99,10 +111,32 @@ export function Editor({ content, onChange }: EditorProps) {
         return () => document.removeEventListener("keydown", handleKeyDown);
     }, [findOpen]);
 
+    const backdropRef = useRef<HTMLDivElement>(null);
+
+    const handleScroll = (e: React.UIEvent<HTMLTextAreaElement>) => {
+        if (backdropRef.current) {
+            backdropRef.current.scrollTop = e.currentTarget.scrollTop;
+            backdropRef.current.scrollLeft = e.currentTarget.scrollLeft;
+        }
+    };
+
     return (
-        <div className="w-full h-full p-4 relative">
+        <div className="w-full h-full relative">
+            {findOpen && matches.length > 0 && (
+                <div
+                    ref={backdropRef}
+                    className="absolute inset-0 p-4 pointer-events-none overflow-y-auto font-mono text-sm leading-relaxed whitespace-pre-wrap wrap-break-word text-transparent pb-28 md:pb-8 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
+                >
+                    {content.substring(0, matches[matchIndex])}
+                    <mark className="bg-primary/40 text-transparent rounded-sm">
+                        {content.substring(matches[matchIndex], matches[matchIndex] + findText.length)}
+                    </mark>
+                    {content.substring(matches[matchIndex] + findText.length)}
+                </div>
+            )}
+
             {findOpen && (
-                <div className="absolute top-4 right-8 z-10 bg-card border shadow-lg rounded-md p-2 flex items-center space-x-2 w-80">
+                <div className="absolute top-4 right-8 z-20 bg-card border shadow-lg rounded-md p-2 flex items-center space-x-2 w-80">
                     <Search className="w-4 h-4 text-muted-foreground shrink-0" />
                     <Input
                         autoFocus
@@ -139,8 +173,9 @@ export function Editor({ content, onChange }: EditorProps) {
                 onChange={(e) => onChange(e.target.value)}
                 onPaste={onPaste}
                 onDrop={onDrop}
+                onScroll={handleScroll}
                 onDragOver={(e) => e.preventDefault()}
-                className="w-full h-full bg-transparent resize-none outline-none font-mono text-sm leading-relaxed pb-24 md:pb-4"
+                className="w-full h-full p-4 absolute inset-0 bg-transparent resize-none outline-none border-none font-mono text-sm leading-relaxed pb-28 md:pb-8 z-10 wrap-break-word"
                 placeholder="Start typing your markdown..."
             />
         </div>

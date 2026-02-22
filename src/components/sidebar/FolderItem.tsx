@@ -11,6 +11,8 @@ import { NewFolderDialog } from "../dialogs/NewFolderDialog";
 import { NewDocDialog } from "../dialogs/NewDocDialog";
 import { mutate } from "swr";
 import { api } from "@/lib/api-client";
+import { MoveDialog } from "../dialogs/MoveDialog";
+import { Forward } from "lucide-react";
 
 interface FolderItemProps {
     node: TreeNodeType;
@@ -24,6 +26,7 @@ export function FolderItem({ node, space, folders, depth, children }: FolderItem
     const [expanded, setExpanded] = useState(false);
     const [newFolderOpen, setNewFolderOpen] = useState(false);
     const [newDocOpen, setNewDocOpen] = useState(false);
+    const [moveOpen, setMoveOpen] = useState(false);
 
     const handleRename = async () => {
         const newName = prompt("Rename Folder:", node.name);
@@ -39,12 +42,57 @@ export function FolderItem({ node, space, folders, depth, children }: FolderItem
         await mutate((key: string) => typeof key === "string" && key.startsWith("/api/documents"), undefined, { revalidate: true });
     };
 
+
+    const handleDragStart = (e: React.DragEvent) => {
+        e.stopPropagation();
+        const folder = folders.find(f => f.id === node.id);
+        e.dataTransfer.setData("application/json", JSON.stringify({ type: "folder", id: node.id, spaceId: space.id, parentFolderId: folder?.parentFolderId || null }));
+        e.dataTransfer.effectAllowed = "move";
+    };
+
+    const handleDragOver = (e: React.DragEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        e.currentTarget.classList.add("ring-1", "ring-primary", "bg-muted/50");
+    };
+
+    const handleDragLeave = (e: React.DragEvent) => {
+        e.currentTarget.classList.remove("ring-1", "ring-primary", "bg-muted/50");
+    };
+
+    const handleDrop = async (e: React.DragEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        e.currentTarget.classList.remove("ring-1", "ring-primary", "bg-muted/50");
+        try {
+            const data = JSON.parse(e.dataTransfer.getData("application/json"));
+
+            // Cannot drop a folder into itself or its own children (we don't strictly check deep children here for simplicity, but avoid dropping to self)
+            if (data.type === "folder" && data.id === node.id) return;
+
+            if (data.type === "doc") {
+                if (data.spaceId === space.id && data.folderId === node.id) return;
+                await api.moveDocument(data.id, space.id, node.id);
+                await mutate((key: string) => typeof key === "string" && key.startsWith("/api/documents"), undefined, { revalidate: true });
+            } else if (data.type === "folder") {
+                if (data.spaceId === space.id && data.parentFolderId === node.id) return;
+                await api.moveFolder(data.id, space.id, node.id);
+                await mutate((key: string) => typeof key === "string" && (key.startsWith("/api/folders") || key.startsWith("/api/documents")), undefined, { revalidate: true });
+            }
+        } catch (err) { }
+    };
+
     return (
         <>
             <ContextMenu>
                 <ContextMenuTrigger asChild>
                     <div
-                        className="group flex items-center justify-between hover:bg-muted/50 rounded-md cursor-pointer text-sm mb-0.5 pr-2"
+                        draggable
+                        onDragStart={handleDragStart}
+                        onDragOver={handleDragOver}
+                        onDragLeave={handleDragLeave}
+                        onDrop={handleDrop}
+                        className="group flex items-center justify-between hover:bg-muted/50 rounded-md cursor-pointer text-sm mb-0.5 pr-2 transition-all"
                         style={{ paddingLeft: `${depth * 16}px` }}
                     >
                         <div className="flex items-center flex-1 overflow-hidden py-1 h-full" onClick={() => setExpanded(!expanded)}>
@@ -54,7 +102,7 @@ export function FolderItem({ node, space, folders, depth, children }: FolderItem
 
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 flex-shrink-0 ml-1">
+                                <Button variant="ghost" className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 shrink-0 ml-1">
                                     <MoreHorizontal className="w-4 h-4" />
                                 </Button>
                             </DropdownMenuTrigger>

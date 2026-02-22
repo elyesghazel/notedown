@@ -8,14 +8,39 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     const userId = await getUserId();
     if (!userId) return new NextResponse("Unauthorized", { status: 401 });
     const { id } = await params;
-    const { name } = await req.json();
+    const body = await req.json();
     const folders = getFolders(userId);
+    const docs = getDocuments(userId);
     const idx = folders.findIndex((f) => f.id === id);
 
     if (idx === -1) return new NextResponse("Not found", { status: 404 });
 
-    folders[idx].name = name;
-    folders[idx].slug = slugify(name);
+    if (body.name !== undefined) {
+        folders[idx].name = body.name;
+        folders[idx].slug = slugify(body.name);
+    }
+
+    if (body.parentFolderId !== undefined || body.parentFolderId === null) {
+        folders[idx].parentFolderId = body.parentFolderId;
+    }
+
+    if (body.spaceId !== undefined && body.spaceId !== folders[idx].spaceId) {
+        const newSpaceId = body.spaceId;
+        folders[idx].spaceId = newSpaceId;
+
+        const updateChildren = (folderId: string) => {
+            folders.filter(f => f.parentFolderId === folderId).forEach(f => {
+                f.spaceId = newSpaceId;
+                updateChildren(f.id);
+            });
+            docs.filter(d => d.folderId === folderId).forEach(d => {
+                d.spaceId = newSpaceId;
+            });
+        };
+        updateChildren(id);
+        saveDocuments(userId, docs);
+    }
+
     saveFolders(userId, folders);
 
     return NextResponse.json(folders[idx]);

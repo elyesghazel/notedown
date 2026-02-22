@@ -8,6 +8,7 @@ import { api } from "@/lib/api-client";
 import { FileText, Folder as FolderIcon, Terminal, Zap, LogOut, Home } from "lucide-react";
 import { Space, Document, Folder } from "@/lib/types";
 import { buildDocUrl, getFolderPath } from "@/lib/url";
+import { getTagColor } from "@/lib/utils";
 
 export function SearchDialog() {
     const [open, setOpen] = useState(false);
@@ -40,7 +41,13 @@ export function SearchDialog() {
     const onSelectDoc = (doc: Document, space: Space) => {
         setOpen(false);
         const folderSlugs = doc.folderId ? getFolderPath(doc.folderId, folders) : [];
-        router.push(buildDocUrl(space.slug, folderSlugs, doc.slug));
+        let url = buildDocUrl(space.slug, folderSlugs, doc.slug);
+
+        if (search && doc.content.toLowerCase().includes(search.toLowerCase()) && !doc.name.toLowerCase().includes(search.toLowerCase())) {
+            url += `?q=${encodeURIComponent(search)}`;
+        }
+
+        router.push(url);
     };
 
     const snippetMatch = (content: string, term: string) => {
@@ -97,6 +104,16 @@ export function SearchDialog() {
                             {documents?.map((doc) => {
                                 const space = spaces?.find(s => s.id === doc.spaceId);
                                 if (!space) return null;
+
+                                const tagRegex = /(?:^|\s)#([a-zA-Z0-9_-]+)/g;
+                                let match;
+                                const docTags = new Set<string>();
+                                while ((match = tagRegex.exec(doc.content)) !== null) {
+                                    docTags.add(match[1].toLowerCase());
+                                    if (docTags.size >= 2) break; // Limit to 2 tags for performance & UI space
+                                }
+                                const displayTags = Array.from(docTags);
+
                                 return (
                                     <CommandItem
                                         key={doc.id}
@@ -107,7 +124,12 @@ export function SearchDialog() {
                                             <div className="flex items-center">
                                                 <FileText className="mr-2 h-4 w-4 shrink-0" />
                                                 <span className="truncate">{doc.name}</span>
-                                                <span className="ml-2 text-xs text-muted-foreground whitespace-nowrap">in {space.name}</span>
+                                                {displayTags.map(tag => (
+                                                    <span key={tag} className={`ml-2 text-[10px] px-1.5 py-0.5 rounded-md border font-medium ${getTagColor(tag)} truncate max-w-[80px]`}>
+                                                        #{tag}
+                                                    </span>
+                                                ))}
+                                                <span className="ml-auto text-xs text-muted-foreground whitespace-nowrap">in {space.name}</span>
                                             </div>
                                             {search && doc.content.toLowerCase().includes(search.toLowerCase()) && !doc.name.toLowerCase().includes(search.toLowerCase()) && (
                                                 <span className="ml-6 text-xs text-muted-foreground mt-0.5 max-w-[90%] truncate opacity-70">
