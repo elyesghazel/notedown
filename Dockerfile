@@ -3,6 +3,49 @@ FROM node:20-slim AS build
 
 WORKDIR /app
 
+# Install system deps for Puppeteer
+RUN apt-get update && apt-get install -y \
+	ca-certificates \
+	fonts-liberation \
+	libasound2 \
+	libatk-bridge2.0-0 \
+	libatk1.0-0 \
+	libc6 \
+	libcairo2 \
+	libcups2 \
+	libdbus-1-3 \
+	libexpat1 \
+	libfontconfig1 \
+	libgbm1 \
+	libgcc1 \
+	libgconf-2-4 \
+	libgdk-pixbuf2.0-0 \
+	libglib2.0-0 \
+	libgtk-3-0 \
+	libnspr4 \
+	libnss3 \
+	libpango-1.0-0 \
+	libpangocairo-1.0-0 \
+	libstdc++6 \
+	libx11-6 \
+	libx11-xcb1 \
+	libxcb1 \
+	libxcomposite1 \
+	libxcursor1 \
+	libxdamage1 \
+	libxext6 \
+	libxfixes3 \
+	libxi6 \
+	libxrandr2 \
+	libxrender1 \
+	libxss1 \
+	libxtst6 \
+	lsb-release \
+	wget \
+	xdg-utils \
+	--no-install-recommends \
+	&& rm -rf /var/lib/apt/lists/*
+
 # Copy package.json only; do not include lockfiles
 COPY package.json ./
 
@@ -12,12 +55,69 @@ RUN npm install
 # Copy the rest of the app
 COPY . .
 
-# Build and export static assets
-RUN npm run build && npx next export
+# Build the app
+ENV NEXT_TELEMETRY_DISABLED 1
+RUN npm run build
 
 # Stage 2: Production
-FROM nginx:alpine
-COPY --from=build /app/out /usr/share/nginx/html
-COPY nginx.conf /etc/nginx/conf.d/default.conf
-EXPOSE 80
-CMD ["nginx", "-g", "daemon off;"]
+FROM node:20-slim AS runner
+
+WORKDIR /app
+
+# Install system deps for Puppeteer
+RUN apt-get update && apt-get install -y \
+	ca-certificates \
+	fonts-liberation \
+	libasound2 \
+	libatk-bridge2.0-0 \
+	libatk1.0-0 \
+	libc6 \
+	libcairo2 \
+	libcups2 \
+	libdbus-1-3 \
+	libexpat1 \
+	libfontconfig1 \
+	libgbm1 \
+	libgcc1 \
+	libgconf-2-4 \
+	libgdk-pixbuf2.0-0 \
+	libglib2.0-0 \
+	libgtk-3-0 \
+	libnspr4 \
+	libnss3 \
+	libpango-1.0-0 \
+	libpangocairo-1.0-0 \
+	libstdc++6 \
+	libx11-6 \
+	libx11-xcb1 \
+	libxcb1 \
+	libxcomposite1 \
+	libxcursor1 \
+	libxdamage1 \
+	libxext6 \
+	libxfixes3 \
+	libxi6 \
+	libxrandr2 \
+	libxrender1 \
+	libxss1 \
+	libxtst6 \
+	lsb-release \
+	wget \
+	xdg-utils \
+	--no-install-recommends \
+	&& rm -rf /var/lib/apt/lists/*
+
+ENV NODE_ENV production
+ENV NEXT_TELEMETRY_DISABLED 1
+
+RUN mkdir -p .data public/uploads
+
+COPY --from=build /app/public ./public
+COPY --from=build /app/.next ./.next
+COPY --from=build /app/node_modules ./node_modules
+COPY --from=build /app/package.json ./package.json
+
+EXPOSE 3000
+
+ENV PORT 3000
+CMD ["npm", "start"]
