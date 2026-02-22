@@ -59,6 +59,9 @@ COPY . .
 ENV NEXT_TELEMETRY_DISABLED 1
 RUN npm run build
 
+# Install the Chromium bundle used by Puppeteer
+RUN npx puppeteer browsers install chrome
+
 # Stage 2: Production
 FROM node:20-slim AS runner
 
@@ -116,6 +119,7 @@ COPY --from=build /app/public ./public
 COPY --from=build /app/.next ./.next
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/package.json ./package.json
+COPY --from=build /root/.cache/puppeteer /root/.cache/puppeteer
 
 EXPOSE 3000
 
