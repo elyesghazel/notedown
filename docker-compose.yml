@@ -1,18 +1,12 @@
 services:
-  app:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: markdown-notes
-    ports:
-      - "3000:3000"
-    volumes:
-      - ./data_storage:/app/.data
-      - ./uploads_storage:/app/public/uploads
-      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+  notedown:
+    build: .
+    container_name: "notedown"
     restart: always
-    environment:
-      - NODE_ENV=production
+    networks:
+      - traefik_proxy
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.notedown.rule=Host(`notes.elyesghazel.ch`)"
@@ -20,4 +14,8 @@ services:
       - "traefik.http.routers.notedown.tls=true"
       - "traefik.http.routers.notedown.tls.certresolver=cloudflare"
       - "traefik.http.services.notedown.loadbalancer.server.port=80"
+
+networks:
+  traefik_proxy:
+    external: true
 
