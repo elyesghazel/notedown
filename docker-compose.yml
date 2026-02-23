@@ -5,11 +5,14 @@ services:
     restart: always
     networks:
       - traefik_proxy
+    environment:
+      - DATA_DIR=/app/.data
     volumes:
       - ./data_storage:/app/.data
       - ./uploads_storage:/app/public/uploads
     ports:
       - "3000:3000"
+    
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.notedown.rule=Host(`notes.elyesghazel.ch`)"
