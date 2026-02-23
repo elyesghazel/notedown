@@ -106,7 +106,7 @@ export function PublishDialog({ doc, open, onOpenChange }: PublishDialogProps) {
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent>
+            <DialogContent className="sm:max-w-[720px] max-h-[85vh] overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle>Publish Document</DialogTitle>
                 </DialogHeader>

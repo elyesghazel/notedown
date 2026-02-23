@@ -171,6 +171,12 @@ export function Editor({ content, onChange }: EditorProps) {
                 ref={textareaRef}
                 value={content}
                 onChange={(e) => onChange(e.target.value)}
+                onKeyDown={(e) => {
+                    if (e.key === "Tab") {
+                        e.preventDefault();
+                        insertTextAtCursor("    ");
+                    }
+                }}
                 onPaste={onPaste}
                 onDrop={onDrop}
                 onScroll={handleScroll}
