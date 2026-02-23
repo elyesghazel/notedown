@@ -24,8 +24,11 @@ export function useImagePaste(insertTextAtCursor: (text: string) => void) {
         try {
             console.log(`[IMAGE_PASTE] Uploading image: ${file.name} (${file.size} bytes)`);
             const response = await api.uploadImage(file);
-            console.log(`[IMAGE_PASTE] Upload successful: ${response.url}`);
-            insertTextAtCursor(`![image](${response.url})`);
+            // Extract filename from URL and use API route
+            const filename = response.url.split('/').pop();
+            const imageUrl = `/api/uploads/${filename}`;
+            console.log(`[IMAGE_PASTE] Upload successful: ${imageUrl}`);
+            insertTextAtCursor(`![image](${imageUrl})`);
         } catch (e: any) {
             const errorMsg = e?.message || String(e);
             console.error("[IMAGE_PASTE] Failed to upload image:", errorMsg);
