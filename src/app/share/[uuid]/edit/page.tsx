@@ -164,8 +164,8 @@ export default function ShareEditPage() {
 
     if (loadError && !ready) {
         return (
-            <div className="min-h-screen flex items-center justify-center text-muted-foreground">
-                <div className="max-w-md text-center space-y-3">
+            <div className="min-h-screen w-full flex items-center justify-center text-muted-foreground px-4">
+                <div className="w-full max-w-md text-center space-y-3">
                     <div className="text-lg font-semibold text-foreground">Unable to edit</div>
                     <div>{loadError}</div>
                 </div>
@@ -175,7 +175,7 @@ export default function ShareEditPage() {
 
     if (!ready) {
         return (
-            <div className="min-h-screen flex items-center justify-center">
+            <div className="min-h-screen w-full flex items-center justify-center px-4">
                 <div className="w-full max-w-sm space-y-4 border rounded-xl bg-card p-6 shadow-lg">
                     <div className="space-y-1">
                         <h1 className="text-xl font-semibold">Edit Live</h1>
