@@ -20,6 +20,7 @@ services:
       - "traefik.http.routers.notedown.tls=true"
       - "traefik.http.routers.notedown.tls.certresolver=cloudflare"
       - "traefik.http.services.notedown.loadbalancer.server.port=3000"
+      - "traefik.http.routers.notedown.middlewares=limit-size"
 
 networks:
   traefik_proxy:
