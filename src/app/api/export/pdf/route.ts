@@ -21,27 +21,63 @@ export async function POST(req: Request) {
                 <base href="${origin}" />
                 <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
                 <style>
-                    body { font-family: sans-serif; }
-                    /* Fix page breaks in PDF */
+                    :root {
+                        --background: 0 0% 100%;
+                        --foreground: 222.2 84% 4.9%;
+                        --primary: 222.2 47.4% 11.2%;
+                        --primary-foreground: 210 40% 98%;
+                        --border: 214.3 31.8% 91.4%;
+                        --muted: 210 40% 96.1%;
+                        --muted-foreground: 215.4 16.3% 46.9%;
+                        --accent: 210 40% 96.1%;
+                        --accent-foreground: 222.2 47.4% 11.2%;
+                    }
+                    html, body {
+                        margin: 0;
+                        padding: 0;
+                        height: auto !important;
+                        overflow: visible !important;
+                        background: white !important;
+                        color: black !important;
+                        font-family: sans-serif;
+                    }
+                    /* Fix page breaks */
+                    #content-wrapper {
+                        display: block !important;
+                        height: auto !important;
+                        overflow: visible !important;
+                        width: 100%;
+                    }
+                    .prose {
+                        max-width: none !important;
+                        width: 100% !important;
+                        height: auto !important;
+                        overflow: visible !important;
+                        display: block !important;
+                        page-break-inside: auto;
+                    }
                     .prose * {
-                        page-break-inside: avoid;
+                        page-break-inside: auto;
                     }
                     .prose img {
-                        max-width: 100%;
-                        height: auto;
+                        page-break-inside: avoid;
+                        max-width: 100% !important;
+                        height: auto !important;
+                        display: block;
+                        margin: 1em 0;
                     }
-                    /* Handle nice printed text */
                     @media print {
-                        body {
-                            background: white !important;
+                        .prose {
                             color: black !important;
                         }
                     }
                 </style>
             </head>
-            <body class="bg-white p-8">
-                <div class="prose max-w-none">
-                    ${html}
+            <body>
+                <div id="content-wrapper" class="p-12">
+                    <div class="prose">
+                        ${html}
+                    </div>
                 </div>
             </body>
             </html>
@@ -71,16 +107,17 @@ export async function POST(req: Request) {
         await page.emulateMediaType('print');
 
         await page.setContent(fullHtml, { waitUntil: 'networkidle0' });
+        await page.evaluateHandle('document.fonts.ready');
 
         // Build header/footer HTML
         const buildHeaderFooterHTML = (items: any[]) => {
             if (!items || items.length === 0) return '';
-            const left = items.find(i => i.position === 'left')?.value || '';
-            const center = items.find(i => i.position === 'center')?.value || '';
-            const right = items.find(i => i.position === 'right')?.value || '';
-            
+            const left = items.filter(i => i.position === 'left').map(i => i.value).join(' ');
+            const center = items.filter(i => i.position === 'center').map(i => i.value).join(' ');
+            const right = items.filter(i => i.position === 'right').map(i => i.value).join(' ');
+
             return `
-                <div style="display: flex; justify-content: space-between; font-size: 10px; width: 100%;">
+                <div style="display: flex; justify-content: space-between; font-size: 10px; width: 100%; padding: 0 20mm; color: #666;">
                     <div style="flex: 1; text-align: left;">${left}</div>
                     <div style="flex: 1; text-align: center;">${center}</div>
                     <div style="flex: 1; text-align: right;">${right}</div>
@@ -91,18 +128,20 @@ export async function POST(req: Request) {
         const headerHTML = buildHeaderFooterHTML(
             header.map((item: any) => ({
                 position: item.position,
-                value: item.type === 'page_number' ? '<span class="pageNumber"></span>' : 
-                       item.type === 'date' ? new Date().toLocaleDateString() :
-                       item.value
+                value: item.type === 'page_number' ? '<span class="pageNumber"></span>' :
+                    item.type === 'date' ? new Date().toLocaleDateString() :
+                        item.type === 'logo' ? `<img src="${item.value}" style="height: ${item.size || 10}mm; vertical-align: middle;" />` :
+                            item.value
             }))
         );
 
         const footerHTML = buildHeaderFooterHTML(
             footer.map((item: any) => ({
                 position: item.position,
-                value: item.type === 'page_number' ? '<span class="pageNumber"></span>' : 
-                       item.type === 'date' ? new Date().toLocaleDateString() :
-                       item.value
+                value: item.type === 'page_number' ? '<span class="pageNumber"></span> / <span class="totalPages"></span>' :
+                    item.type === 'date' ? new Date().toLocaleDateString() :
+                        item.type === 'logo' ? `<img src="${item.value}" style="height: ${item.size || 10}mm; vertical-align: middle;" />` :
+                            item.value
             }))
         );
 

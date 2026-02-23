@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect, useRef } from "react";
+import { useSearchParams } from "next/navigation";
 import useSWR, { mutate } from "swr";
 import { api } from "@/lib/api-client";
 import { buildDocUrl, getFolderPath } from "@/lib/url";
@@ -23,6 +24,15 @@ export default function TasksPage() {
     const [taskContent, setTaskContent] = useState("");
     const [taskDueDate, setTaskDueDate] = useState("");
     const [selectedDocId, setSelectedDocId] = useState("");
+
+    const searchParams = useSearchParams();
+    const inputRef = useRef<HTMLInputElement>(null);
+
+    useEffect(() => {
+        if (searchParams?.get("new") === "true") {
+            inputRef.current?.focus();
+        }
+    }, [searchParams]);
 
     const tasks = useMemo(() => {
         if (!allDocs || !spaces || !folders) return [];
@@ -74,6 +84,26 @@ export default function TasksPage() {
         return a.dueDate.localeCompare(b.dueDate);
     });
     const done = tasks.filter(t => t.type === "done");
+
+    const formatDueDate = (dateStr: string) => {
+        const date = new Date(dateStr);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const tomorrow = new Date(today);
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        const yesterday = new Date(today);
+        yesterday.setDate(yesterday.getDate() - 1);
+
+        const dTime = new Date(dateStr).getTime();
+        const isOverdue = dTime < today.getTime();
+
+        if (dTime === today.getTime()) return { label: "Today", color: "bg-amber-500/10 text-amber-600 border-amber-500/20" };
+        if (dTime === tomorrow.getTime()) return { label: "Tomorrow", color: "bg-blue-500/10 text-blue-600 border-blue-500/20" };
+        if (dTime === yesterday.getTime()) return { label: "Yesterday", color: "bg-red-500/10 text-red-600 border-red-500/20" };
+
+        if (isOverdue) return { label: dateStr, color: "bg-red-500/10 text-red-600 border-red-500/20" };
+        return { label: dateStr, color: "bg-muted text-muted-foreground border-border/50" };
+    };
 
     const toggleTask = async (task: typeof tasks[0]) => {
         const doc = allDocs?.find(d => d.id === task.docId);
@@ -132,118 +162,121 @@ export default function TasksPage() {
     }
 
     return (
-        <div className="max-w-5xl mx-auto p-4 sm:p-8 sm:pt-12 w-full">
-            <h1 className="text-3xl font-bold mb-8 flex items-center px-2">
-                <CheckSquare className="mr-3 w-8 h-8 text-primary" />
-                Your Tasks
-            </h1>
+        <div className="flex-1 overflow-y-auto h-full w-full">
+            <div className="max-w-5xl mx-auto p-4 sm:p-8 sm:pt-12 w-full">
+                <h1 className="text-3xl font-bold mb-8 flex items-center px-2">
+                    <CheckSquare className="mr-3 w-8 h-8 text-primary" />
+                    Your Tasks
+                </h1>
 
-            <form onSubmit={handleAddTask} className="mb-10 flex flex-col sm:flex-row gap-3 p-4 sm:p-5 bg-card/60 backdrop-blur rounded-xl border border-border shadow-sm mx-2">
-                <input
-                    value={taskContent}
-                    onChange={(e) => setTaskContent(e.target.value)}
-                    placeholder="E.g. Call the client tomorrow"
-                    className="flex-1 bg-background border border-input rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all w-full"
-                    required
-                />
-                <input
-                    type="date"
-                    value={taskDueDate}
-                    onChange={(e) => setTaskDueDate(e.target.value)}
-                    className="bg-background border border-input rounded-lg px-4 py-2.5 text-sm sm:max-w-[150px] focus:ring-2 focus:ring-primary/20 outline-none transition-all cursor-pointer w-full text-muted-foreground"
-                />
-                <select
-                    value={selectedDocId}
-                    onChange={(e) => setSelectedDocId(e.target.value)}
-                    className="bg-background border border-input rounded-lg px-4 py-2.5 text-sm sm:max-w-[280px] focus:ring-2 focus:ring-primary/20 outline-none transition-all cursor-pointer w-full"
-                    required
-                >
-                    <option value="">Associate with file...</option>
-                    {allDocs.map(d => {
-                        const space = spaces.find(s => s.id === d.spaceId);
-                        const folderSlugs = d.folderId ? getFolderPath(d.folderId, folders) : [];
-                        const pathText = folderSlugs.length > 0 ? folderSlugs.join(" / ") + " / " : "";
-                        const location = space ? `${space.name} / ${pathText}` : "";
-                        return (
-                            <option key={d.id} value={d.id}>
-                                {location}{d.name}
-                            </option>
-                        );
-                    })}
-                </select>
-                <button
-                    type="submit"
-                    disabled={isAdding}
-                    className="bg-primary hover:bg-primary/90 text-primary-foreground px-5 py-2.5 rounded-lg text-sm font-semibold transition-all flex items-center justify-center shadow-sm whitespace-nowrap disabled:opacity-50"
-                >
-                    {isAdding ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Plus className="w-4 h-4 mr-2" />}
-                    Create Task
-                </button>
-            </form>
+                <form onSubmit={handleAddTask} className="mb-10 flex flex-col sm:flex-row gap-3 p-4 sm:p-5 bg-card/60 backdrop-blur rounded-xl border border-border shadow-sm mx-2">
+                    <input
+                        ref={inputRef}
+                        value={taskContent}
+                        onChange={(e) => setTaskContent(e.target.value)}
+                        placeholder="E.g. Call the client tomorrow"
+                        className="flex-1 bg-background border border-input rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary/20 outline-none transition-all w-full"
+                        required
+                    />
+                    <input
+                        type="date"
+                        value={taskDueDate}
+                        onChange={(e) => setTaskDueDate(e.target.value)}
+                        className="bg-background border border-input rounded-lg px-4 py-2.5 text-sm sm:max-w-[150px] focus:ring-2 focus:ring-primary/20 outline-none transition-all cursor-pointer w-full text-muted-foreground"
+                    />
+                    <select
+                        value={selectedDocId}
+                        onChange={(e) => setSelectedDocId(e.target.value)}
+                        className="bg-background border border-input rounded-lg px-4 py-2.5 text-sm sm:max-w-[280px] focus:ring-2 focus:ring-primary/20 outline-none transition-all cursor-pointer w-full"
+                        required
+                    >
+                        <option value="">Associate with file...</option>
+                        {allDocs.map(d => {
+                            const space = spaces.find(s => s.id === d.spaceId);
+                            const folderSlugs = d.folderId ? getFolderPath(d.folderId, folders) : [];
+                            const pathText = folderSlugs.length > 0 ? folderSlugs.join(" / ") + " / " : "";
+                            const location = space ? `${space.name} / ${pathText}` : "";
+                            return (
+                                <option key={d.id} value={d.id}>
+                                    {location}{d.name}
+                                </option>
+                            );
+                        })}
+                    </select>
+                    <button
+                        type="submit"
+                        disabled={isAdding}
+                        className="bg-primary hover:bg-primary/90 text-primary-foreground px-5 py-2.5 rounded-lg text-sm font-semibold transition-all flex items-center justify-center shadow-sm whitespace-nowrap disabled:opacity-50"
+                    >
+                        {isAdding ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Plus className="w-4 h-4 mr-2" />}
+                        Create Task
+                    </button>
+                </form>
 
-            <div className="space-y-8 px-2">
-                <div>
-                    <h2 className="text-xl font-semibold mb-4 text-foreground/80 border-b pb-2 flex items-center justify-between">
-                        To-Do
-                        <span className="bg-primary/10 text-primary text-xs py-0.5 px-2.5 rounded-full">{todos.length}</span>
-                    </h2>
-                    {todos.length === 0 ? (
-                        <p className="text-muted-foreground italic text-sm p-4 bg-muted/30 rounded-lg">No pending tasks found. Break down your thoughts into tasks!</p>
-                    ) : (
-                        <ul className="space-y-3">
-                            {todos.map((task, i) => {
-                                const isOverdue = task.dueDate && new Date(task.dueDate) < new Date(new Date().setHours(0, 0, 0, 0));
-                                return (
-                                    <li key={i} className="flex items-start group p-4 rounded-xl border bg-card hover:border-primary/30 transition-all shadow-sm">
-                                        <button onClick={() => toggleTask(task)} className="focus:outline-none shrink-0" title="Mark as done">
-                                            <Square className="w-5 h-5 text-muted-foreground/70 group-hover:text-primary mr-3 mt-0.5 transition-colors" />
+                <div className="space-y-8 px-2">
+                    <div>
+                        <h2 className="text-xl font-semibold mb-4 text-foreground/80 border-b pb-2 flex items-center justify-between">
+                            To-Do
+                            <span className="bg-primary/10 text-primary text-xs py-0.5 px-2.5 rounded-full">{todos.length}</span>
+                        </h2>
+                        {todos.length === 0 ? (
+                            <p className="text-muted-foreground italic text-sm p-4 bg-muted/30 rounded-lg">No pending tasks found. Break down your thoughts into tasks!</p>
+                        ) : (
+                            <ul className="space-y-3">
+                                {todos.map((task, i) => {
+                                    const isOverdue = task.dueDate && new Date(task.dueDate) < new Date(new Date().setHours(0, 0, 0, 0));
+                                    return (
+                                        <li key={i} className="flex items-start group p-4 rounded-xl border bg-card hover:border-primary/30 transition-all shadow-sm">
+                                            <button onClick={() => toggleTask(task)} className="focus:outline-none shrink-0" title="Mark as done">
+                                                <Square className="w-5 h-5 text-muted-foreground/70 group-hover:text-primary mr-3 mt-0.5 transition-colors" />
+                                            </button>
+                                            <div className="flex-1">
+                                                <div className="flex items-start justify-between">
+                                                    <p className="text-foreground leading-snug pr-4">{task.content}</p>
+                                                    {task.dueDate && (
+                                                        <span className={`shrink-0 text-[10px] px-2 py-0.5 rounded border font-medium whitespace-nowrap ${formatDueDate(task.dueDate).color}`}>
+                                                            📅 {formatDueDate(task.dueDate).label}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                <Link href={task.docUrl} className="inline-flex items-center text-xs text-muted-foreground/80 hover:text-primary mt-2 transition-colors py-1 px-2 -ml-2 rounded-md hover:bg-primary/10">
+                                                    <FileText className="w-3.5 h-3.5 mr-1.5 opacity-70" />
+                                                    {task.docName}
+                                                </Link>
+                                            </div>
+                                        </li>
+                                    );
+                                })}
+                            </ul>
+                        )}
+                    </div>
+
+                    <div>
+                        <h2 className="text-xl font-semibold mb-4 text-foreground/50 border-b pb-2 flex items-center justify-between">
+                            Completed
+                            <span className="bg-muted text-muted-foreground text-xs py-0.5 px-2.5 rounded-full">{done.length}</span>
+                        </h2>
+                        {done.length === 0 ? (
+                            <p className="text-muted-foreground italic text-sm p-4">No completed tasks yet.</p>
+                        ) : (
+                            <ul className="space-y-3 opacity-60 hover:opacity-100 transition-opacity">
+                                {done.map((task, i) => (
+                                    <li key={i} className="flex items-start group p-4 rounded-xl border bg-muted/40 transition-colors">
+                                        <button onClick={() => toggleTask(task)} className="focus:outline-none shrink-0" title="Mark as todo">
+                                            <CheckSquare className="w-5 h-5 text-primary mr-3 mt-0.5" />
                                         </button>
                                         <div className="flex-1">
-                                            <div className="flex items-start justify-between">
-                                                <p className="text-foreground leading-snug pr-4">{task.content}</p>
-                                                {task.dueDate && (
-                                                    <span className={`shrink-0 text-[10px] px-2 py-0.5 rounded border font-medium whitespace-nowrap ${isOverdue ? 'bg-red-500/10 text-red-600 border-red-500/20' : 'bg-muted text-muted-foreground border-border/50'}`}>
-                                                        📅 {task.dueDate}
-                                                    </span>
-                                                )}
-                                            </div>
+                                            <p className="text-muted-foreground line-through decoration-muted-foreground/50 leading-snug pr-4">{task.content}</p>
                                             <Link href={task.docUrl} className="inline-flex items-center text-xs text-muted-foreground/80 hover:text-primary mt-2 transition-colors py-1 px-2 -ml-2 rounded-md hover:bg-primary/10">
                                                 <FileText className="w-3.5 h-3.5 mr-1.5 opacity-70" />
                                                 {task.docName}
                                             </Link>
                                         </div>
                                     </li>
-                                );
-                            })}
-                        </ul>
-                    )}
-                </div>
-
-                <div>
-                    <h2 className="text-xl font-semibold mb-4 text-foreground/50 border-b pb-2 flex items-center justify-between">
-                        Completed
-                        <span className="bg-muted text-muted-foreground text-xs py-0.5 px-2.5 rounded-full">{done.length}</span>
-                    </h2>
-                    {done.length === 0 ? (
-                        <p className="text-muted-foreground italic text-sm p-4">No completed tasks yet.</p>
-                    ) : (
-                        <ul className="space-y-3 opacity-60 hover:opacity-100 transition-opacity">
-                            {done.map((task, i) => (
-                                <li key={i} className="flex items-start group p-4 rounded-xl border bg-muted/40 transition-colors">
-                                    <button onClick={() => toggleTask(task)} className="focus:outline-none shrink-0" title="Mark as todo">
-                                        <CheckSquare className="w-5 h-5 text-primary mr-3 mt-0.5" />
-                                    </button>
-                                    <div className="flex-1">
-                                        <p className="text-muted-foreground line-through decoration-muted-foreground/50 leading-snug pr-4">{task.content}</p>
-                                        <Link href={task.docUrl} className="inline-flex items-center text-xs text-muted-foreground/80 hover:text-primary mt-2 transition-colors py-1 px-2 -ml-2 rounded-md hover:bg-primary/10">
-                                            <FileText className="w-3.5 h-3.5 mr-1.5 opacity-70" />
-                                            {task.docName}
-                                        </Link>
-                                    </div>
-                                </li>
-                            ))}
-                        </ul>
-                    )}
+                                ))}
+                            </ul>
+                        )}
+                    </div>
                 </div>
             </div>
         </div>

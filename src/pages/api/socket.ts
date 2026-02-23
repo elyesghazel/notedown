@@ -88,7 +88,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                 saveDocuments(socket.data.userId, docs);
 
                 const publishedList = getPublished();
-                const affected = publishedList.filter((p) => p.docId === docId);
+                const affected = publishedList.filter((p) => p.docId === docId && p.editable);
                 if (affected.length > 0) {
                     const updated = publishedList.map((p) =>
                         p.docId === docId

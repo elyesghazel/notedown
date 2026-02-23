@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import useSWR from "swr";
 import { api } from "@/lib/api-client";
-import { FileText, Folder as FolderIcon, Terminal, Zap, LogOut, Home } from "lucide-react";
+import { FileText, Folder as FolderIcon, Terminal, Zap, LogOut, Home, CheckSquare } from "lucide-react";
 import { Space, Document, Folder } from "@/lib/types";
 import { buildDocUrl, getFolderPath } from "@/lib/url";
 import { getTagColor } from "@/lib/utils";
@@ -100,6 +100,10 @@ export function SearchDialog() {
                         <CommandItem value="> quick note capture" onSelect={() => { setOpen(false); router.push("/quick"); }}>
                             <Zap className="mr-2 h-4 w-4" />
                             <span>Quick Note</span>
+                        </CommandItem>
+                        <CommandItem value="> create quick task" onSelect={() => { setOpen(false); router.push("/tasks?new=true"); }}>
+                            <CheckSquare className="mr-2 h-4 w-4" />
+                            <span>Quick Task</span>
                         </CommandItem>
                         <CommandItem value="> home page dashboard" onSelect={() => { setOpen(false); router.push("/"); }}>
                             <Home className="mr-2 h-4 w-4" />

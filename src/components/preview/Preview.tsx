@@ -138,6 +138,19 @@ export function Preview({ content, onContentChange }: PreviewProps) {
                             onContentChange={onContentChange}
                         />
                     ),
+                    blockquote: ({ children }) => (
+                        <blockquote className="border-l-4 border-primary/40 bg-primary/5 pl-4 py-2 pr-2 rounded-r-md italic my-6 relative overflow-hidden">
+                            <div className="absolute top-0 left-0 w-1 h-full bg-primary/20" />
+                            {children}
+                        </blockquote>
+                    ),
+                    h1: ({ children }) => <h1 className="text-3xl font-extrabold tracking-tight border-b-2 border-primary/10 pb-3 mb-6 mt-10 text-foreground">{children}</h1>,
+                    h2: ({ children }) => <h2 className="text-2xl font-bold tracking-tight mb-4 mt-8 text-foreground/90 flex items-center gap-2">
+                        <span className="w-1.5 h-6 bg-primary/40 rounded-full" />
+                        {children}
+                    </h2>,
+                    h3: ({ children }) => <h3 className="text-xl font-semibold mb-3 mt-6 text-foreground/80">{children}</h3>,
+                    hr: () => <hr className="my-10 border-t-2 border-border/50 rounded-full" />,
                     li: ({ node, className, children, ...props }: any) => {
                         return <li className={className} data-line={node?.position?.start?.line} {...props}>{children}</li>;
                     },

@@ -9,8 +9,6 @@ import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useEffect, useState } from "react";
 import { Loader2, Copy, X } from "lucide-react";
-import html2canvas from "html2canvas-pro";
-import jsPDF from "jspdf";
 import { api } from "@/lib/api-client";
 import { PDFHeaderFooterItem, PDFPreset } from "@/lib/types";
 
@@ -99,23 +97,7 @@ export function ExportPDFDialog({ open, onOpenChange, documentName = "document" 
         });
     };
 
-    const prepareItems = async (items: HeaderFooterContent[]): Promise<PreparedItem[]> => {
-        const prepared = await Promise.all(
-            items.map(async (item) => {
-                if (item.type !== "logo" || !item.value) return item;
-                const img = await loadImageData(item.value);
-                const widthMm = typeof item.size === "number" && item.size > 0 ? item.size : 18;
-                const heightMm = (img.height * widthMm) / img.width;
-                return {
-                    ...item,
-                    value: img.dataUrl,
-                    size: widthMm,
-                    _imageHeightMm: heightMm,
-                } as PreparedItem;
-            })
-        );
-        return prepared;
-    };
+
 
     const addHeaderItem = () => {
         setHeaderItems([...headerItems, { position: "left", type: "text", value: "" }]);
@@ -219,192 +201,42 @@ export function ExportPDFDialog({ open, onOpenChange, documentName = "document" 
     const handleExport = async () => {
         setLoading(true);
         try {
-            const preparedHeader = await prepareItems(headerItems);
-            const preparedFooter = await prepareItems(footerItems);
-
             const element = document.querySelector(".prose") as HTMLElement;
             if (!element) throw new Error("Preview not found — switch to Split or Preview mode first");
 
-            // Create a wrapper with proper styling for PDF export
-            const wrapper = document.createElement("div");
-            wrapper.style.backgroundColor = "#ffffff";
-            wrapper.style.color = "#000000";
-            wrapper.style.padding = "20px";
-            wrapper.style.width = "210mm"; // A4 width
-            wrapper.style.boxSizing = "border-box";
-
-            // Clone the element and style it for export
-            const cloned = element.cloneNode(true) as HTMLElement;
-            
-            // Force text color to black for all elements
-            const styleElement = document.createElement("style");
-            styleElement.textContent = `
-                * { color: #000000 !important; }
-                code { color: #1a1a1a !important; background: #f5f5f5 !important; }
-                pre { background: #f5f5f5 !important; color: #1a1a1a !important; }
-            `;
-            cloned.appendChild(styleElement);
-            wrapper.appendChild(cloned);
-
-            // Temporarily add to DOM
-            document.body.appendChild(wrapper);
-
-            // Capture with proper colors
-            const canvas = await html2canvas(wrapper, {
-                scale: 2,
-                logging: false,
-                useCORS: true,
-                allowTaint: true,
-                backgroundColor: "#ffffff",
+            const response = await fetch("/api/export/pdf", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    html: element.innerHTML,
+                    header: headerItems,
+                    footer: footerItems,
+                }),
             });
 
-            // Remove wrapper
-            document.body.removeChild(wrapper);
-
-            // Convert to image
-            const imgData = canvas.toDataURL("image/png");
-
-            // Create PDF
-            const pdf = new jsPDF({
-                orientation: "portrait",
-                unit: "mm",
-                format: "a4",
-            });
-
-            const pageWidth = pdf.internal.pageSize.getWidth();
-            const pageHeight = pdf.internal.pageSize.getHeight();
-            const margin = 15;
-
-            const maxHeaderImageHeight = preparedHeader.reduce((max, item) => {
-                if (item.type !== "logo") return max;
-                return Math.max(max, item._imageHeightMm || 0);
-            }, 0);
-            const maxFooterImageHeight = preparedFooter.reduce((max, item) => {
-                if (item.type !== "logo") return max;
-                return Math.max(max, item._imageHeightMm || 0);
-            }, 0);
-
-            const headerReserve = Math.max(15, maxHeaderImageHeight + 6);
-            const footerReserve = Math.max(15, maxFooterImageHeight + 6);
-            const baseFooterGap = 10;
-            const contentTop = margin + 5 + (headerReserve - 15);
-            const contentBottom = pageHeight - margin - baseFooterGap - (footerReserve - 15);
-            const pageHeightWithMargins = Math.max(20, contentBottom - contentTop);
-
-            // Calculate dimensions
-            const imgWidth = pageWidth - margin * 2;
-            const imgHeight = (canvas.height * imgWidth) / canvas.width;
-
-            // Calculate pages needed
-            const totalPages = Math.ceil(imgHeight / pageHeightWithMargins);
-
-            // Add pages
-            for (let pageNum = 0; pageNum < totalPages; pageNum++) {
-                if (pageNum > 0) {
-                    pdf.addPage();
+            if (!response.ok) {
+                let errorMsg = "Failed to export PDF";
+                try {
+                    const errorData = await response.json();
+                    if (errorData.error) errorMsg = errorData.error;
+                } catch {
+                    // Ignore
                 }
-
-                // Add header
-                const headerImageY = Math.max(2, margin - headerReserve + 2);
-
-                const headerTextY = maxHeaderImageHeight
-                    ? headerImageY + maxHeaderImageHeight / 2 + 3
-                    : margin - 8;
-                const headerLeftLogoWidth = preparedHeader.reduce((max, item) => {
-                    if (item.type !== "logo" || item.position !== "left") return max;
-                    return Math.max(max, item.size || 0);
-                }, 0);
-                const headerRightLogoWidth = preparedHeader.reduce((max, item) => {
-                    if (item.type !== "logo" || item.position !== "right") return max;
-                    return Math.max(max, item.size || 0);
-                }, 0);
-                const headerPadding = 2;
-                const headerLeftEdge = margin + headerLeftLogoWidth + (headerLeftLogoWidth ? headerPadding : 0);
-                const headerRightEdge = pageWidth - margin - headerRightLogoWidth - (headerRightLogoWidth ? headerPadding : 0);
-                const headerCenterX = pageWidth / 2;
-                preparedHeader.forEach((item) => {
-                    if (item.type === "logo" && item.value) {
-                        const width = item.size || 18;
-                        const height = item._imageHeightMm || 0;
-                        if (!height) return;
-                        const x =
-                            item.position === "left"
-                                ? margin
-                                : item.position === "center"
-                                  ? pageWidth / 2 - width / 2
-                                  : pageWidth - margin - width;
-                        pdf.addImage(item.value, "PNG", x, headerImageY, width, height);
-                        return;
-                    }
-
-                    const text =
-                        item.type === "page_number"
-                            ? (pageNum + 1).toString()
-                            : item.type === "date"
-                              ? new Date().toLocaleDateString()
-                              : item.value;
-                    pdf.setFontSize(9);
-                    pdf.setTextColor(0, 0, 0);
-                    const x =
-                        item.position === "left"
-                            ? headerLeftEdge
-                            : item.position === "center"
-                              ? headerCenterX
-                              : headerRightEdge;
-                    pdf.text(text, x, headerTextY, { align: item.position as any });
-                });
-
-                // Add content image
-                const yOffset = pageNum * pageHeightWithMargins;
-                const heightToDraw = Math.min(pageHeightWithMargins, imgHeight - yOffset);
-
-                pdf.addImage(
-                    imgData,
-                    "PNG",
-                    margin,
-                    contentTop,
-                    imgWidth,
-                    heightToDraw
-                );
-
-                // Add footer
-                const footerTextY = pageHeight - margin + 3;
-                preparedFooter.forEach((item) => {
-                    if (item.type === "logo" && item.value) {
-                        const width = item.size || 18;
-                        const height = item._imageHeightMm || 0;
-                        if (!height) return;
-                        const x =
-                            item.position === "left"
-                                ? margin
-                                : item.position === "center"
-                                  ? pageWidth / 2 - width / 2
-                                  : pageWidth - margin - width;
-                        const y = footerTextY - height - 2;
-                        pdf.addImage(item.value, "PNG", x, y, width, height);
-                        return;
-                    }
-
-                    const text =
-                        item.type === "page_number"
-                            ? (pageNum + 1).toString()
-                            : item.type === "date"
-                              ? new Date().toLocaleDateString()
-                              : item.value;
-                    pdf.setFontSize(9);
-                    pdf.setTextColor(0, 0, 0);
-                    const x =
-                        item.position === "left"
-                            ? margin
-                            : item.position === "center"
-                              ? pageWidth / 2
-                              : pageWidth - margin;
-                    pdf.text(text, x, footerTextY, { align: item.position as any });
-                });
+                throw new Error(errorMsg);
             }
 
-            // Download
-            pdf.save(`${documentName}.pdf`);
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `${documentName}.pdf`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            window.URL.revokeObjectURL(url);
+
             onOpenChange(false);
         } catch (err) {
             console.error(err);

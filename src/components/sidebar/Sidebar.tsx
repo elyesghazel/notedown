@@ -73,6 +73,16 @@ export function Sidebar() {
     const [reloading, setReloading] = useState(false);
     const pathname = usePathname();
 
+    const openTasksCount = useMemo(() => {
+        if (!documents) return 0;
+        let count = 0;
+        for (const doc of documents) {
+            const matches = doc.content.match(/^[ \t]*(?:[-*+]|\d+\.)\s+\[ \]\s+.*/gm);
+            if (matches) count += matches.length;
+        }
+        return count;
+    }, [documents]);
+
     if (pathname?.startsWith("/share")) return null;
     if (pathname?.startsWith("/login")) return null;
     if (pathname?.startsWith("/register")) return null;
@@ -106,7 +116,7 @@ export function Sidebar() {
     }
 
     const sidebarInner = (
-        <div className="w-full h-full bg-card flex flex-col">
+        <div className="w-full h-full bg-card flex flex-col overflow-hidden">
             <div className="p-3 flex items-center justify-between border-b h-14 gap-1">
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -155,7 +165,7 @@ export function Sidebar() {
                 </div>
             </div>
 
-            <ScrollArea className="flex-1 px-3 py-3">
+            <ScrollArea className="flex-1 min-h-0 px-3 py-3">
                 {!spaces && (
                     <div className="flex justify-center p-4">
                         <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
@@ -201,6 +211,11 @@ export function Sidebar() {
                 <Link href="/tasks" className="flex items-center text-sm font-medium text-muted-foreground hover:text-foreground transition-colors p-2 rounded-md hover:bg-muted">
                     <CheckSquare className="w-4 h-4 mr-2" />
                     Tasks
+                    {openTasksCount > 0 && (
+                        <span className="ml-auto bg-primary/20 text-primary text-[10px] px-1.5 py-0.5 rounded-full font-bold">
+                            {openTasksCount}
+                        </span>
+                    )}
                 </Link>
                 <Link href="/tags" className="flex items-center text-sm font-medium text-muted-foreground hover:text-foreground transition-colors p-2 rounded-md hover:bg-muted">
                     <Tag className="w-4 h-4 mr-2" />
