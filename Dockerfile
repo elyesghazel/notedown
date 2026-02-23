@@ -113,13 +113,16 @@ RUN apt-get update && apt-get install -y \
 ENV NODE_ENV production
 ENV NEXT_TELEMETRY_DISABLED 1
 
-RUN mkdir -p .data public/uploads
+RUN mkdir -p .data public/uploads && chmod -R 755 public
 
 COPY --from=build /app/public ./public
 COPY --from=build /app/.next ./.next
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/package.json ./package.json
 COPY --from=build /root/.cache/puppeteer /root/.cache/puppeteer
+
+# Ensure public folder is world-readable for static file serving
+RUN chmod -R 755 public && chmod -R 666 public/uploads
 
 EXPOSE 3000
 
