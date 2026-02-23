@@ -196,15 +196,18 @@ export function ExportPDFDialog({ open, onOpenChange, documentName = "document" 
         try {
             const formData = new FormData();
             formData.append("file", file);
-            const response = await fetch("/api/upload", { method: "POST", body: formData });
+            const response = await fetch("/api/upload", { method: "POST", body: formData, credentials: "include" });
             if (!response.ok) throw new Error("Upload failed");
             const data = await response.json();
             const url = data?.url as string | undefined;
             if (!url) throw new Error("Upload failed");
+            // Convert /uploads/filename to /api/uploads/filename for API route serving
+            const filename = url.split('/').pop();
+            const apiUrl = `/api/uploads/${filename}`;
             if (section === "header") {
-                updateHeaderItem(index, { value: url });
+                updateHeaderItem(index, { value: apiUrl });
             } else {
-                updateFooterItem(index, { value: url });
+                updateFooterItem(index, { value: apiUrl });
             }
         } catch {
             alert("Failed to upload logo");
