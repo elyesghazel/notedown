@@ -18,6 +18,9 @@ export default function Home() {
             } else {
                 setLoading(false);
             }
+        }).catch(() => {
+            // If spaces can't be loaded, show onboarding
+            setLoading(false);
         });
     }, [router]);
 

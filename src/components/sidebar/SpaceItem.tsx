@@ -19,9 +19,10 @@ interface SpaceItemProps {
     space: Space;
     folders: Folder[];
     documents: Document[];
+    publishedMap: Map<string, { editable: boolean }>;
 }
 
-export function SpaceItem({ space, folders, documents }: SpaceItemProps) {
+export function SpaceItem({ space, folders, documents, publishedMap }: SpaceItemProps) {
     const [expanded, setExpanded] = useState(true);
     const [newFolderOpen, setNewFolderOpen] = useState(false);
     const [newDocOpen, setNewDocOpen] = useState(false);
@@ -125,7 +126,7 @@ export function SpaceItem({ space, folders, documents }: SpaceItemProps) {
             {expanded && (
                 <div className="space-y-0.5">
                     {tree.map(node => (
-                        <TreeNodeItem key={node.id} node={node} space={space} folders={folders} depth={1} />
+                        <TreeNodeItem key={node.id} node={node} space={space} folders={folders} depth={1} publishedMap={publishedMap} />
                     ))}
                     {tree.length === 0 && (
                         <div className="pl-6 py-1 text-xs text-muted-foreground italic">Empty space</div>

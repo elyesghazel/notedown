@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useEffect, use } from "react";
+import { useMemo, useState, useEffect, use, useRef } from "react";
 import useSWR from "swr";
 import { api } from "@/lib/api-client";
 import { useAutoSave } from "@/hooks/useAutoSave";
@@ -8,6 +8,7 @@ import { Editor } from "@/components/editor/Editor";
 import { Preview } from "@/components/preview/Preview";
 import { Toolbar, ViewMode } from "@/components/toolbar/Toolbar";
 import { Loader2 } from "lucide-react";
+import { io, Socket } from "socket.io-client";
 
 function useIsMobile() {
     const [isMobile, setIsMobile] = useState(false);
@@ -41,6 +42,9 @@ export default function EditorPage({ params }: { params: Promise<{ space: string
     const [content, setContent] = useState("");
     const [isSaving, setIsSaving] = useState(false);
     const [docId, setDocId] = useState<string | null>(null);
+    const socketRef = useRef<Socket | null>(null);
+    const lastIncoming = useRef<string | null>(null);
+    const emitTimer = useRef<NodeJS.Timeout | null>(null);
 
     // Resolve Document using the path array
     const currentDoc = useMemo(() => {
@@ -77,6 +81,48 @@ export default function EditorPage({ params }: { params: Promise<{ space: string
         setContent(val);
         setIsSaving(true);
     };
+
+    useEffect(() => {
+        if (!docId) return;
+
+        const socket = io({ path: "/api/socket" });
+        socketRef.current = socket;
+
+        socket.emit("doc:join", { docId }, (resp: { ok: boolean }) => {
+            if (!resp?.ok) {
+                socket.disconnect();
+            }
+        });
+
+        socket.on("doc:content", (payload: { docId: string; content: string; sourceId?: string }) => {
+            if (payload.docId !== docId) return;
+            if (payload.sourceId && payload.sourceId === socket.id) return;
+            lastIncoming.current = payload.content;
+            setContent(payload.content);
+        });
+
+        return () => {
+            socket.disconnect();
+            socketRef.current = null;
+        };
+    }, [docId]);
+
+    useEffect(() => {
+        if (!docId || !socketRef.current) return;
+        if (lastIncoming.current === content) {
+            lastIncoming.current = null;
+            return;
+        }
+
+        if (emitTimer.current) clearTimeout(emitTimer.current);
+        emitTimer.current = setTimeout(() => {
+            socketRef.current?.emit("doc:update", { docId, content });
+        }, 200);
+
+        return () => {
+            if (emitTimer.current) clearTimeout(emitTimer.current);
+        };
+    }, [content, docId]);
 
     // Force edit or preview only on mobile (never split)
     const effectiveMode = isMobile && mode === "split" ? "edit" : mode;

@@ -27,6 +27,11 @@ function write<T>(file: string, data: T[], subDir?: string): void {
 export const getUsers = () => read<User>("users.json");
 export const saveUsers = (u: User[]) => write("users.json", u);
 
+export const getProfile = (userId: string): User | null => {
+    const users = getUsers();
+    return users.find(u => u.id === userId) || null;
+};
+
 export const getPublished = () => read<PublishedDoc>("published.json");
 export const savePublished = (p: PublishedDoc[]) => write("published.json", p);
 
