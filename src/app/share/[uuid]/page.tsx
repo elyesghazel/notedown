@@ -1,5 +1,6 @@
 import { getPublished } from "@/lib/db";
 import { Preview } from "@/components/preview/Preview";
+import EditableShare from "./EditableShare";
 
 export default async function SharePage({ params }: { params: Promise<{ uuid: string }> }) {
     const { uuid } = await params;
@@ -27,6 +28,7 @@ export default async function SharePage({ params }: { params: Promise<{ uuid: st
                         Snapshot
                     </span>
                 </div>
+                {snapshot.editable && <EditableShare uuid={uuid} />}
             </header>
 
             {/* Content - centered card with proper prose styling */}

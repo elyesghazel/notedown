@@ -6,9 +6,9 @@ import { api } from "@/lib/api-client";
 import { SpaceItem } from "./SpaceItem";
 import { NewSpaceDialog } from "../dialogs/NewSpaceDialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Zap, Loader2, ChevronLeft, ChevronRight, RefreshCw, Menu, Search, HelpCircle, Pencil, CheckSquare, Tag, Settings } from "lucide-react";
+import { Zap, Loader2, ChevronLeft, ChevronRight, RefreshCw, Menu, Search, HelpCircle, Pencil, CheckSquare, Tag, Settings, LogOut } from "lucide-react";
 import Link from "next/link";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
@@ -19,6 +19,12 @@ export function Sidebar() {
     useEffect(() => setMounted(true), []);
 
     const { data: workspaces } = useSWR("/api/workspaces", api.getWorkspaces);
+    const { data: published } = useSWR("/api/publish", api.getPublishedList);
+    const { data: userInfo } = useSWR("/api/auth/me", async () => {
+        const res = await fetch("/api/auth/me");
+        if (!res.ok) return null;
+        return res.json();
+    });
 
     // Auto-create default workspace if empty
     useEffect(() => {
@@ -53,11 +59,23 @@ export function Sidebar() {
         () => Promise.all(spaces!.map(s => api.getDocuments(s.id))).then(r => r.flat())
     );
 
+    const publishedMap = useMemo(() => {
+        const map = new Map<string, { editable: boolean }>();
+        if (published) {
+            for (const p of published) {
+                map.set(p.docId, { editable: p.editable });
+            }
+        }
+        return map;
+    }, [published]);
+
     const [collapsed, setCollapsed] = useState(false);
     const [reloading, setReloading] = useState(false);
     const pathname = usePathname();
 
     if (pathname?.startsWith("/share")) return null;
+    if (pathname?.startsWith("/login")) return null;
+    if (pathname?.startsWith("/register")) return null;
 
     if (!mounted) {
         return (
@@ -150,38 +168,49 @@ export function Sidebar() {
                         space={space}
                         folders={folders.filter(f => f.spaceId === space.id)}
                         documents={documents.filter(d => d.spaceId === space.id)}
+                        publishedMap={publishedMap}
                     />
                 ))}
 
                 {activeWorkspaceId && <NewSpaceDialog workspaceId={activeWorkspaceId} />}
             </ScrollArea>
 
-            <div className="p-3 border-t">
+            <div className="p-3 border-t space-y-1">
+                {userInfo && (
+                    <div className="px-2 py-2 mb-2 rounded-md bg-muted/50 text-xs">
+                        <div className="text-muted-foreground">Logged in as</div>
+                        <div className="font-semibold truncate text-foreground">
+                            {userInfo.displayName}
+                            {userInfo.isGuest && <span className="text-muted-foreground text-xs ml-1">(guest)</span>}
+                        </div>
+                    </div>
+                )}
+
                 <button
                     onClick={() => document.dispatchEvent(new KeyboardEvent("keydown", { key: "k", metaKey: true }))}
-                    className="w-full flex items-center justify-start text-sm font-medium text-muted-foreground hover:text-foreground transition-colors p-2 rounded-md hover:bg-muted mb-1"
+                    className="w-full flex items-center justify-start text-sm font-medium text-muted-foreground hover:text-foreground transition-colors p-2 rounded-md hover:bg-muted"
                 >
                     <Search className="w-4 h-4 mr-2" />
                     Search...
                     <span className="ml-auto text-xs text-muted-foreground bg-muted-foreground/10 px-1.5 py-0.5 rounded">⌘K</span>
                 </button>
-                <Link href="/quick" className="flex items-center text-sm font-medium text-muted-foreground hover:text-foreground transition-colors p-2 rounded-md hover:bg-muted mb-1">
+                <Link href="/quick" className="flex items-center text-sm font-medium text-muted-foreground hover:text-foreground transition-colors p-2 rounded-md hover:bg-muted">
                     <Zap className="w-4 h-4 mr-2" />
                     Quick Capture
                 </Link>
-                <Link href="/tasks" className="flex items-center text-sm font-medium text-muted-foreground hover:text-foreground transition-colors p-2 rounded-md hover:bg-muted mb-1">
+                <Link href="/tasks" className="flex items-center text-sm font-medium text-muted-foreground hover:text-foreground transition-colors p-2 rounded-md hover:bg-muted">
                     <CheckSquare className="w-4 h-4 mr-2" />
                     Tasks
                 </Link>
-                <Link href="/tags" className="flex items-center text-sm font-medium text-muted-foreground hover:text-foreground transition-colors p-2 rounded-md hover:bg-muted mb-1">
+                <Link href="/tags" className="flex items-center text-sm font-medium text-muted-foreground hover:text-foreground transition-colors p-2 rounded-md hover:bg-muted">
                     <Tag className="w-4 h-4 mr-2" />
                     Tags
                 </Link>
-                <Link href="/settings" className="flex items-center text-sm font-medium text-muted-foreground hover:text-foreground transition-colors p-2 rounded-md hover:bg-muted mb-1">
+                <Link href="/settings" className="flex items-center text-sm font-medium text-muted-foreground hover:text-foreground transition-colors p-2 rounded-md hover:bg-muted">
                     <Settings className="w-4 h-4 mr-2" />
                     Settings
                 </Link>
-                <Link href="/help" className="flex items-center text-sm font-medium text-muted-foreground hover:text-foreground transition-colors p-2 rounded-md hover:bg-muted mb-1">
+                <Link href="/help" className="flex items-center text-sm font-medium text-muted-foreground hover:text-foreground transition-colors p-2 rounded-md hover:bg-muted">
                     <HelpCircle className="w-4 h-4 mr-2" />
                     Help & Guides
                 </Link>
@@ -192,7 +221,7 @@ export function Sidebar() {
                     }}
                     className="w-full flex items-center text-sm font-medium text-muted-foreground hover:text-destructive transition-colors p-2 rounded-md hover:bg-destructive/10"
                 >
-                    <RefreshCw className="w-4 h-4 mr-2 opacity-50" />
+                    <LogOut className="w-4 h-4 mr-2" />
                     Sign Out
                 </button>
             </div>
@@ -223,3 +252,4 @@ export function Sidebar() {
         </>
     );
 }
+

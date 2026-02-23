@@ -63,6 +63,9 @@ export interface Document {
 export interface PublishedDoc {
     uuid: string;
     docId: string;
+    ownerId?: string;
+    editable?: boolean;
+    editPassword?: string;
     title?: string;
     content: string;
     publishedAt: string;

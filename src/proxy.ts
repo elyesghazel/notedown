@@ -15,6 +15,7 @@ export async function proxy(req: NextRequest) {
         pathname.startsWith("/api/auth") ||
         pathname.startsWith("/share") ||
         pathname.startsWith("/api/publish") || // Viewing published pages needs API access
+        pathname.startsWith("/api/socket") || // WebSocket handshake
         pathname.startsWith("/uploads") || // Allow image downloads directly
         pathname === "/favicon.ico"
     ) {
@@ -22,7 +23,9 @@ export async function proxy(req: NextRequest) {
     }
 
     const token = req.cookies.get("auth-token")?.value;
+    const guestId = req.cookies.get("guest-id")?.value;
     if (!token) {
+        if (guestId) return NextResponse.next();
         return NextResponse.redirect(new URL("/login", req.url));
     }
 
