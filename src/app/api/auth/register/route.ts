@@ -23,6 +23,7 @@ export async function POST(req: Request) {
             id: uuidv4(),
             username,
             passwordHash,
+            displayName: username,
             createdAt: new Date().toISOString()
         };
 

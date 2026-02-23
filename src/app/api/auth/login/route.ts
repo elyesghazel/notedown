@@ -27,7 +27,10 @@ export async function POST(req: Request) {
             maxAge: 30 * 24 * 60 * 60
         });
 
-        return NextResponse.json({ success: true, user: { id: user.id, username: user.username } });
+        return NextResponse.json({
+            success: true,
+            user: { id: user.id, username: user.username, displayName: user.displayName || user.username }
+        });
     } catch {
         return new NextResponse("Failed to login", { status: 500 });
     }

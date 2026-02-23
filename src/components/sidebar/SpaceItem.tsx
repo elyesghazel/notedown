@@ -13,6 +13,7 @@ import { NewDocDialog } from "../dialogs/NewDocDialog";
 import { mutate } from "swr";
 import { api } from "@/lib/api-client";
 import { useRouter } from "next/navigation";
+import { RenameDialog } from "../dialogs/RenameDialog";
 
 interface SpaceItemProps {
     space: Space;
@@ -24,11 +25,10 @@ export function SpaceItem({ space, folders, documents }: SpaceItemProps) {
     const [expanded, setExpanded] = useState(true);
     const [newFolderOpen, setNewFolderOpen] = useState(false);
     const [newDocOpen, setNewDocOpen] = useState(false);
+    const [renameOpen, setRenameOpen] = useState(false);
     const router = useRouter();
 
-    const handleRename = async () => {
-        const newName = prompt("Rename Space:", space.name);
-        if (!newName) return;
+    const handleRename = async (newName: string) => {
         await api.renameSpace(space.id, newName);
         await mutate((key: string) => typeof key === "string" && key.startsWith("/api/spaces"), undefined, { revalidate: true });
     };
@@ -73,7 +73,7 @@ export function SpaceItem({ space, folders, documents }: SpaceItemProps) {
             <ContextMenu>
                 <ContextMenuTrigger asChild>
                     <div
-                        className="group flex items-center justify-between px-2 py-1 hover:bg-muted/50 rounded-md cursor-pointer text-sm font-semibold mb-1 transition-all"
+                        className="group flex items-center justify-between px-2 py-1 hover:bg-muted/50 rounded-md cursor-pointer text-sm font-semibold mb-1 transition-colors"
                         onDragOver={handleDragOver}
                         onDragLeave={handleDragLeave}
                         onDrop={handleDrop}
@@ -85,7 +85,7 @@ export function SpaceItem({ space, folders, documents }: SpaceItemProps) {
 
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100">
+                                <Button variant="ghost" className="h-6 w-6 p-0 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto group-focus-within:opacity-100 group-focus-within:pointer-events-auto focus-visible:opacity-100 transition-opacity">
                                     <MoreHorizontal className="w-4 h-4" />
                                 </Button>
                             </DropdownMenuTrigger>
@@ -96,7 +96,7 @@ export function SpaceItem({ space, folders, documents }: SpaceItemProps) {
                                 <DropdownMenuItem onClick={() => setNewFolderOpen(true)}>
                                     <FolderPlus className="w-4 h-4 mr-2" /> New Folder
                                 </DropdownMenuItem>
-                                <DropdownMenuItem onClick={handleRename}>
+                                <DropdownMenuItem onClick={() => setRenameOpen(true)}>
                                     <Pencil className="w-4 h-4 mr-2" /> Rename
                                 </DropdownMenuItem>
                                 <DropdownMenuItem onClick={handleDelete} className="text-destructive">
@@ -113,7 +113,7 @@ export function SpaceItem({ space, folders, documents }: SpaceItemProps) {
                     <ContextMenuItem onClick={() => setNewFolderOpen(true)}>
                         <FolderPlus className="w-4 h-4 mr-2" /> New Folder
                     </ContextMenuItem>
-                    <ContextMenuItem onClick={handleRename}>
+                    <ContextMenuItem onClick={() => setRenameOpen(true)}>
                         <Pencil className="w-4 h-4 mr-2" /> Rename
                     </ContextMenuItem>
                     <ContextMenuItem onClick={handleDelete} className="text-destructive">
@@ -135,6 +135,15 @@ export function SpaceItem({ space, folders, documents }: SpaceItemProps) {
 
             <NewFolderDialog spaceId={space.id} open={newFolderOpen} onOpenChange={setNewFolderOpen} />
             <NewDocDialog spaceId={space.id} spaceSlug={space.slug} open={newDocOpen} onOpenChange={setNewDocOpen} />
+            <RenameDialog
+                open={renameOpen}
+                onOpenChange={setRenameOpen}
+                title="Rename Space"
+                initialValue={space.name}
+                onConfirm={handleRename}
+                confirmLabel="Rename"
+                cancelLabel="Cancel"
+            />
         </div>
     );
 }

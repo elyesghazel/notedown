@@ -93,7 +93,7 @@ const ResizableImage = memo(({ src, alt: originalAlt, content, onContentChange, 
     }, [isResizing, size, originalAlt, src, content, onContentChange, height]);
 
     return (
-        <div className="relative inline-block group/img max-w-full my-2 align-top">
+        <span className="relative inline-block group/img max-w-full my-2 align-top">
             <img
                 ref={imgRef}
                 {...props}
@@ -106,18 +106,19 @@ const ResizableImage = memo(({ src, alt: originalAlt, content, onContentChange, 
                 }}
                 className="rounded-lg shadow-md border border-border/50 max-w-full h-auto block"
             />
-            <div
+            <button
+                type="button"
                 onMouseDown={handleMouseDown}
-                className="absolute bottom-1 right-1 w-5 h-5 bg-primary/90 rounded-tl-md cursor-nwse-resize opacity-0 group-hover/img:opacity-100 transition-all flex items-center justify-center shadow-lg hover:scale-110 z-20"
+                className="absolute bottom-1 right-1 w-5 h-5 bg-primary/90 rounded-tl-md cursor-nwse-resize opacity-0 group-hover/img:opacity-100 transition-all flex items-center justify-center shadow-lg hover:scale-110 z-20 border-0 p-0"
             >
-                <div className="w-2.5 h-2.5 border-r-2 border-b-2 border-white/90" />
-            </div>
+                <span className="w-2.5 h-2.5 border-r-2 border-b-2 border-white/90" />
+            </button>
             {isResizing && (
-                <div className="absolute top-2 right-2 bg-black/80 text-white text-[10px] px-2 py-1 rounded backdrop-blur-md z-30 font-mono shadow-xl border border-white/10 pointer-events-none">
+                <span className="absolute top-2 right-2 bg-black/80 text-white text-[10px] px-2 py-1 rounded backdrop-blur-md z-30 font-mono shadow-xl border border-white/10 pointer-events-none">
                     {size.width}{size.height ? ` × ${size.height}` : ''}
-                </div>
+                </span>
             )}
-        </div>
+        </span>
     );
 });
 

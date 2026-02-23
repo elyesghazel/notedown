@@ -12,6 +12,7 @@ import { NewDocDialog } from "../dialogs/NewDocDialog";
 import { mutate } from "swr";
 import { api } from "@/lib/api-client";
 import { MoveDialog } from "../dialogs/MoveDialog";
+import { RenameDialog } from "../dialogs/RenameDialog";
 import { Forward } from "lucide-react";
 
 interface FolderItemProps {
@@ -27,10 +28,9 @@ export function FolderItem({ node, space, folders, depth, children }: FolderItem
     const [newFolderOpen, setNewFolderOpen] = useState(false);
     const [newDocOpen, setNewDocOpen] = useState(false);
     const [moveOpen, setMoveOpen] = useState(false);
+    const [renameOpen, setRenameOpen] = useState(false);
 
-    const handleRename = async () => {
-        const newName = prompt("Rename Folder:", node.name);
-        if (!newName) return;
+    const handleRename = async (newName: string) => {
         await api.renameFolder(node.id, newName);
         await mutate((key: string) => typeof key === "string" && key.startsWith("/api/folders"), undefined, { revalidate: true });
     };
@@ -92,7 +92,7 @@ export function FolderItem({ node, space, folders, depth, children }: FolderItem
                         onDragOver={handleDragOver}
                         onDragLeave={handleDragLeave}
                         onDrop={handleDrop}
-                        className="group flex items-center justify-between hover:bg-muted/50 rounded-md cursor-pointer text-sm mb-0.5 pr-2 transition-all"
+                        className="group flex items-center justify-between hover:bg-muted/50 rounded-md cursor-pointer text-sm mb-0.5 pr-2 transition-colors"
                         style={{ paddingLeft: `${depth * 16}px` }}
                     >
                         <div className="flex items-center flex-1 overflow-hidden py-1 h-full" onClick={() => setExpanded(!expanded)}>
@@ -102,7 +102,7 @@ export function FolderItem({ node, space, folders, depth, children }: FolderItem
 
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 shrink-0 ml-1">
+                                <Button variant="ghost" className="h-6 w-6 p-0 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto group-focus-within:opacity-100 group-focus-within:pointer-events-auto focus-visible:opacity-100 shrink-0 ml-1 transition-opacity">
                                     <MoreHorizontal className="w-4 h-4" />
                                 </Button>
                             </DropdownMenuTrigger>
@@ -113,8 +113,11 @@ export function FolderItem({ node, space, folders, depth, children }: FolderItem
                                 <DropdownMenuItem onClick={() => setNewFolderOpen(true)}>
                                     <FolderPlus className="w-4 h-4 mr-2" /> New Subfolder
                                 </DropdownMenuItem>
-                                <DropdownMenuItem onClick={handleRename}>
+                                <DropdownMenuItem onClick={() => setRenameOpen(true)}>
                                     <Pencil className="w-4 h-4 mr-2" /> Rename
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => setMoveOpen(true)}>
+                                    <Forward className="w-4 h-4 mr-2" /> Move To...
                                 </DropdownMenuItem>
                                 <DropdownMenuItem onClick={handleDelete} className="text-destructive">
                                     <Trash className="w-4 h-4 mr-2" /> Delete
@@ -130,8 +133,11 @@ export function FolderItem({ node, space, folders, depth, children }: FolderItem
                     <ContextMenuItem onClick={() => setNewFolderOpen(true)}>
                         <FolderPlus className="w-4 h-4 mr-2" /> New Subfolder
                     </ContextMenuItem>
-                    <ContextMenuItem onClick={handleRename}>
+                    <ContextMenuItem onClick={() => setRenameOpen(true)}>
                         <Pencil className="w-4 h-4 mr-2" /> Rename
+                    </ContextMenuItem>
+                    <ContextMenuItem onClick={() => setMoveOpen(true)}>
+                        <Forward className="w-4 h-4 mr-2" /> Move To...
                     </ContextMenuItem>
                     <ContextMenuItem onClick={handleDelete} className="text-destructive">
                         <Trash className="w-4 h-4 mr-2" /> Delete
@@ -143,6 +149,16 @@ export function FolderItem({ node, space, folders, depth, children }: FolderItem
 
             <NewFolderDialog spaceId={space.id} parentFolderId={node.id} open={newFolderOpen} onOpenChange={setNewFolderOpen} />
             <NewDocDialog spaceId={space.id} spaceSlug={space.slug} folderId={node.id} folders={folders} open={newDocOpen} onOpenChange={setNewDocOpen} />
+            <MoveDialog open={moveOpen} onOpenChange={setMoveOpen} type="folder" itemId={node.id} itemName={node.name} currentSpaceId={space.id} />
+            <RenameDialog
+                open={renameOpen}
+                onOpenChange={setRenameOpen}
+                title="Rename Folder"
+                initialValue={node.name}
+                onConfirm={handleRename}
+                confirmLabel="Rename"
+                cancelLabel="Cancel"
+            />
         </>
     );
 }

@@ -1,4 +1,4 @@
-import { Workspace, Space, Folder, Document, PublishedDoc } from "./types";
+import { Workspace, Space, Folder, Document, PublishedDoc, PDFPreset } from "./types";
 
 export const api = {
     // Workspaces
@@ -107,4 +107,37 @@ export const api = {
     unpublishDoc: (uuid: string) => fetch(`/api/publish/${uuid}`, { method: "DELETE" }),
     getPublished: (uuid: string): Promise<PublishedDoc> =>
         fetch(`/api/publish/${uuid}`).then((r) => r.json()),
+
+    // Settings
+    getProfile: (): Promise<{ username: string; displayName: string; createdAt: string }> =>
+        fetch("/api/settings/profile").then((r) => r.json()),
+    updateProfile: (displayName: string) =>
+        fetch("/api/settings/profile", {
+            method: "PATCH",
+            body: JSON.stringify({ displayName }),
+            headers: { "Content-Type": "application/json" },
+        }).then((r) => r.json()),
+    changePassword: (currentPassword: string, newPassword: string) =>
+        fetch("/api/settings/password", {
+            method: "POST",
+            body: JSON.stringify({ currentPassword, newPassword }),
+            headers: { "Content-Type": "application/json" },
+        }).then((r) => r.json()),
+
+    // PDF presets
+    getPdfPresets: (): Promise<PDFPreset[]> => fetch("/api/pdf-presets").then((r) => r.json()),
+    createPdfPreset: (name: string, header: PDFPreset["header"], footer: PDFPreset["footer"]): Promise<PDFPreset> =>
+        fetch("/api/pdf-presets", {
+            method: "POST",
+            body: JSON.stringify({ name, header, footer }),
+            headers: { "Content-Type": "application/json" },
+        }).then((r) => r.json()),
+    updatePdfPreset: (id: string, data: Partial<Pick<PDFPreset, "name" | "header" | "footer">>): Promise<PDFPreset> =>
+        fetch(`/api/pdf-presets/${id}`,
+            {
+                method: "PATCH",
+                body: JSON.stringify(data),
+                headers: { "Content-Type": "application/json" },
+            }).then((r) => r.json()),
+    deletePdfPreset: (id: string) => fetch(`/api/pdf-presets/${id}`, { method: "DELETE" }),
 };

@@ -4,7 +4,7 @@ import puppeteer from "puppeteer";
 
 export async function POST(req: Request) {
     try {
-        const { html } = await req.json();
+        const { html, header = [], footer = [] } = await req.json();
 
         if (!html) {
             return NextResponse.json({ error: "No HTML provided" }, { status: 400 });
@@ -72,9 +72,46 @@ export async function POST(req: Request) {
 
         await page.setContent(fullHtml, { waitUntil: 'networkidle0' });
 
+        // Build header/footer HTML
+        const buildHeaderFooterHTML = (items: any[]) => {
+            if (!items || items.length === 0) return '';
+            const left = items.find(i => i.position === 'left')?.value || '';
+            const center = items.find(i => i.position === 'center')?.value || '';
+            const right = items.find(i => i.position === 'right')?.value || '';
+            
+            return `
+                <div style="display: flex; justify-content: space-between; font-size: 10px; width: 100%;">
+                    <div style="flex: 1; text-align: left;">${left}</div>
+                    <div style="flex: 1; text-align: center;">${center}</div>
+                    <div style="flex: 1; text-align: right;">${right}</div>
+                </div>
+            `;
+        };
+
+        const headerHTML = buildHeaderFooterHTML(
+            header.map((item: any) => ({
+                position: item.position,
+                value: item.type === 'page_number' ? '<span class="pageNumber"></span>' : 
+                       item.type === 'date' ? new Date().toLocaleDateString() :
+                       item.value
+            }))
+        );
+
+        const footerHTML = buildHeaderFooterHTML(
+            footer.map((item: any) => ({
+                position: item.position,
+                value: item.type === 'page_number' ? '<span class="pageNumber"></span>' : 
+                       item.type === 'date' ? new Date().toLocaleDateString() :
+                       item.value
+            }))
+        );
+
         const pdfBuffer = await page.pdf({
             format: 'A4',
             printBackground: true,
+            displayHeaderFooter: true,
+            headerTemplate: headerHTML,
+            footerTemplate: footerHTML,
             margin: {
                 top: '20mm',
                 right: '20mm',

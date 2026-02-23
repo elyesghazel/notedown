@@ -6,7 +6,7 @@ import { Eye, FileEdit, Share, Download } from "lucide-react";
 import { Document } from "@/lib/types";
 import { useState } from "react";
 import { PublishDialog } from "../dialogs/PublishDialog";
-import { ExportDialog } from "../dialogs/ExportDialog";
+import { ExportPDFDialog } from "../dialogs/ExportPDFDialog";
 
 export type ViewMode = "edit" | "split" | "preview";
 
@@ -70,7 +70,7 @@ export function Toolbar({ doc, mode, setMode, isSaving, isMobile = false }: Tool
                 </div>
 
                 <PublishDialog doc={doc} open={publishOpen} onOpenChange={setPublishOpen} />
-                {exportOpen && <ExportDialog open={exportOpen} onOpenChange={setExportOpen} />}
+                {exportOpen && <ExportPDFDialog open={exportOpen} onOpenChange={setExportOpen} documentName={doc.name} />}
             </>
         );
     }
@@ -126,7 +126,7 @@ export function Toolbar({ doc, mode, setMode, isSaving, isMobile = false }: Tool
             </div>
 
             <PublishDialog doc={doc} open={publishOpen} onOpenChange={setPublishOpen} />
-            {exportOpen && <ExportDialog open={exportOpen} onOpenChange={setExportOpen} />}
+            {exportOpen && <ExportPDFDialog open={exportOpen} onOpenChange={setExportOpen} documentName={doc.name} />}
         </>
     );
 }

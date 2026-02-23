@@ -1,7 +1,7 @@
 import fs from "fs";
 import path from "path";
 import os from "os";
-import { Workspace, Space, Folder, Document, PublishedDoc, User } from "./types";
+import { Workspace, Space, Folder, Document, PublishedDoc, User, PDFPreset } from "./types";
 
 const DATA_DIR = process.env.DATA_DIR || path.join(os.homedir(), ".notedown-data");
 
@@ -42,3 +42,6 @@ export const saveFolders = (userId: string, f: Folder[]) => write("folders.json"
 
 export const getDocuments = (userId: string) => read<Document>("documents.json", userId);
 export const saveDocuments = (userId: string, d: Document[]) => write("documents.json", d, userId);
+
+export const getPdfPresets = (userId: string) => read<PDFPreset>("pdf_presets.json", userId);
+export const savePdfPresets = (userId: string, p: PDFPreset[]) => write("pdf_presets.json", p, userId);

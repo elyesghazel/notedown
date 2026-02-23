@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import useSWR from "swr";
@@ -13,12 +13,18 @@ import { getTagColor } from "@/lib/utils";
 export function SearchDialog() {
     const [open, setOpen] = useState(false);
     const [search, setSearch] = useState("");
+    const [debouncedSearch, setDebouncedSearch] = useState("");
     const router = useRouter();
 
     const { data } = useSWR<{ spaces: Space[], documents: Document[], folders: Folder[] }>("/api/search", (url: string) => fetch(url).then(r => r.json()));
     const spaces = data?.spaces || [];
     const documents = data?.documents || [];
     const folders = data?.folders || [];
+
+    useEffect(() => {
+        const t = setTimeout(() => setDebouncedSearch(search), 150);
+        return () => clearTimeout(t);
+    }, [search]);
 
     useEffect(() => {
         const down = (e: KeyboardEvent) => {
@@ -59,8 +65,29 @@ export function SearchDialog() {
         return (start > 0 ? "..." : "") + content.substring(start, end) + (end < content.length ? "..." : "");
     };
 
+    const isCommandMode = search.trim().startsWith(">");
+    const term = debouncedSearch.trim().toLowerCase();
+
+    const filteredSpaces = useMemo(() => {
+        if (!term || isCommandMode) return spaces;
+        return spaces.filter(space => space.name.toLowerCase().includes(term));
+    }, [spaces, term, isCommandMode]);
+
+    const filteredDocuments = useMemo(() => {
+        if (isCommandMode) return [] as Document[];
+        if (!term) return documents;
+
+        const searchContent = term.length >= 2 ? term : "";
+        return documents.filter(doc => {
+            const nameMatch = doc.name.toLowerCase().includes(term);
+            if (nameMatch) return true;
+            if (!searchContent) return false;
+            return doc.content.toLowerCase().includes(searchContent);
+        });
+    }, [documents, term, isCommandMode]);
+
     return (
-        <CommandDialog open={open} onOpenChange={setOpen}>
+        <CommandDialog open={open} onOpenChange={setOpen} commandProps={{ shouldFilter: false }}>
             <CommandInput
                 value={search}
                 onValueChange={setSearch}
@@ -68,7 +95,7 @@ export function SearchDialog() {
             />
             <CommandList>
                 <CommandEmpty>No results found.</CommandEmpty>
-                {search.startsWith(">") && (
+                {isCommandMode && (
                     <CommandGroup heading="System Commands">
                         <CommandItem value="> quick note capture" onSelect={() => { setOpen(false); router.push("/quick"); }}>
                             <Zap className="mr-2 h-4 w-4" />
@@ -87,10 +114,10 @@ export function SearchDialog() {
                         </CommandItem>
                     </CommandGroup>
                 )}
-                {!search.startsWith(">") && (
+                {!isCommandMode && (
                     <>
                         <CommandGroup heading="Spaces">
-                            {spaces?.map((space) => (
+                            {filteredSpaces?.map((space) => (
                                 <CommandItem key={space.id} onSelect={() => {
                                     setOpen(false);
                                     router.push(`/${space.slug}/readme.md`);
@@ -101,7 +128,7 @@ export function SearchDialog() {
                             ))}
                         </CommandGroup>
                         <CommandGroup heading="Documents">
-                            {documents?.map((doc) => {
+                            {filteredDocuments?.map((doc) => {
                                 const space = spaces?.find(s => s.id === doc.spaceId);
                                 if (!space) return null;
 
@@ -117,7 +144,6 @@ export function SearchDialog() {
                                 return (
                                     <CommandItem
                                         key={doc.id}
-                                        value={`${doc.name} ${doc.content}`}
                                         onSelect={() => onSelectDoc(doc, space)}
                                     >
                                         <div className="flex flex-col w-full overflow-hidden">
@@ -131,9 +157,9 @@ export function SearchDialog() {
                                                 ))}
                                                 <span className="ml-auto text-xs text-muted-foreground whitespace-nowrap">in {space.name}</span>
                                             </div>
-                                            {search && doc.content.toLowerCase().includes(search.toLowerCase()) && !doc.name.toLowerCase().includes(search.toLowerCase()) && (
+                                            {term && doc.content.toLowerCase().includes(term) && !doc.name.toLowerCase().includes(term) && (
                                                 <span className="ml-6 text-xs text-muted-foreground mt-0.5 max-w-[90%] truncate opacity-70">
-                                                    {snippetMatch(doc.content, search)}
+                                                    {snippetMatch(doc.content, term)}
                                                 </span>
                                             )}
                                         </div>

@@ -6,7 +6,7 @@ import { api } from "@/lib/api-client";
 import { SpaceItem } from "./SpaceItem";
 import { NewSpaceDialog } from "../dialogs/NewSpaceDialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Zap, Loader2, ChevronLeft, ChevronRight, RefreshCw, Menu, Search, HelpCircle, Pencil, CheckSquare, Tag } from "lucide-react";
+import { Zap, Loader2, ChevronLeft, ChevronRight, RefreshCw, Menu, Search, HelpCircle, Pencil, CheckSquare, Tag, Settings } from "lucide-react";
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
@@ -61,7 +61,7 @@ export function Sidebar() {
 
     if (!mounted) {
         return (
-            <div className="hidden md:flex w-64 h-full border-r shrink-0 items-center justify-center bg-card">
+            <div className="hidden md:flex w-72 h-full border-r shrink-0 items-center justify-center bg-card">
                 <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
             </div>
         );
@@ -177,6 +177,10 @@ export function Sidebar() {
                     <Tag className="w-4 h-4 mr-2" />
                     Tags
                 </Link>
+                <Link href="/settings" className="flex items-center text-sm font-medium text-muted-foreground hover:text-foreground transition-colors p-2 rounded-md hover:bg-muted mb-1">
+                    <Settings className="w-4 h-4 mr-2" />
+                    Settings
+                </Link>
                 <Link href="/help" className="flex items-center text-sm font-medium text-muted-foreground hover:text-foreground transition-colors p-2 rounded-md hover:bg-muted mb-1">
                     <HelpCircle className="w-4 h-4 mr-2" />
                     Help & Guides
@@ -198,7 +202,7 @@ export function Sidebar() {
     return (
         <>
             {/* Desktop Sidebar */}
-            <div className="hidden md:flex w-64 h-full border-r shrink-0">
+            <div className="hidden md:flex w-72 h-full border-r shrink-0">
                 {sidebarInner}
             </div>
 

@@ -2,7 +2,27 @@ export interface User {
     id: string;
     username: string;
     passwordHash: string;
+    displayName?: string;
     createdAt: string;
+}
+
+export type PDFContentPosition = "left" | "center" | "right";
+export type PDFContentType = "text" | "page_number" | "date" | "logo";
+
+export interface PDFHeaderFooterItem {
+    position: PDFContentPosition;
+    type: PDFContentType;
+    value: string;
+    size?: number;
+}
+
+export interface PDFPreset {
+    id: string;
+    name: string;
+    header: PDFHeaderFooterItem[];
+    footer: PDFHeaderFooterItem[];
+    createdAt: string;
+    updatedAt: string;
 }
 
 export interface Workspace {
