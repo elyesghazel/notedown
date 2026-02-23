@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useEffect, useRef } from "react";
+import { useMemo, useState, useEffect, useRef, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import useSWR, { mutate } from "swr";
 import { api } from "@/lib/api-client";
@@ -8,7 +8,7 @@ import { buildDocUrl, getFolderPath } from "@/lib/url";
 import Link from "next/link";
 import { CheckSquare, Square, FileText, Plus, Loader2 } from "lucide-react";
 
-export default function TasksPage() {
+function TasksContent() {
     const { data: workspaces } = useSWR("/api/workspaces", api.getWorkspaces);
     const activeWorkspaceId = workspaces?.[0]?.id;
 
@@ -224,7 +224,6 @@ export default function TasksPage() {
                         ) : (
                             <ul className="space-y-3">
                                 {todos.map((task, i) => {
-                                    const isOverdue = task.dueDate && new Date(task.dueDate) < new Date(new Date().setHours(0, 0, 0, 0));
                                     return (
                                         <li key={i} className="flex items-start group p-4 rounded-xl border bg-card hover:border-primary/30 transition-all shadow-sm">
                                             <button onClick={() => toggleTask(task)} className="focus:outline-none shrink-0" title="Mark as done">
@@ -280,5 +279,17 @@ export default function TasksPage() {
                 </div>
             </div>
         </div>
+    );
+}
+
+export default function TasksPage() {
+    return (
+        <Suspense fallback={
+            <div className="flex-1 flex items-center justify-center p-12">
+                <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+            </div>
+        }>
+            <TasksContent />
+        </Suspense>
     );
 }
