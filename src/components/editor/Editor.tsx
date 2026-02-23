@@ -39,7 +39,7 @@ export function Editor({ content, onChange }: EditorProps) {
 
     // Initial Search URL Payload parsing
     useEffect(() => {
-        const q = searchParams.get("q");
+        const q = searchParams?.get("q");
         if (q) {
             setFindText(q);
             setFindOpen(true);
