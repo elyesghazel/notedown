@@ -111,7 +111,15 @@ export const api = {
     uploadImage: (file: File): Promise<{ url: string }> => {
         const form = new FormData();
         form.append("file", file);
-        return fetch("/api/upload", { method: "POST", credentials: "include", body: form }).then((r) => r.json());
+        return fetch("/api/upload", { method: "POST", credentials: "include", body: form })
+            .then((r) => {
+                if (!r.ok) {
+                    return r.json().then((data) => {
+                        throw new Error(data.error || `Upload failed with status ${r.status}`);
+                    });
+                }
+                return r.json();
+            });
     },
 
     // Publish

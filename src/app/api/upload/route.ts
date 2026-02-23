@@ -14,10 +14,14 @@ export async function POST(req: Request) {
         const file = formData.get("file") as File | null;
 
         if (!file) {
+            console.error("[UPLOAD] No file part in request");
             return new NextResponse("No file part", { status: 400 });
         }
 
+        console.log(`[UPLOAD] Received file: ${file.name} (${file.size} bytes, type: ${file.type})`);
+
         const buffer = Buffer.from(await file.arrayBuffer());
+        console.log(`[UPLOAD] Buffer created: ${buffer.length} bytes`);
 
         // Attempt to keep extension
         const extMatch = file.name.match(/\.[0-9a-z]+$/i);
@@ -25,15 +29,33 @@ export async function POST(req: Request) {
         const filename = `${uuidv4()}${ext}`;
 
         const uploadsDir = path.join(process.cwd(), "public", "uploads");
+        console.log(`[UPLOAD] Uploads directory: ${uploadsDir}`);
+
         if (!fs.existsSync(uploadsDir)) {
+            console.log(`[UPLOAD] Creating uploads directory...`);
             fs.mkdirSync(uploadsDir, { recursive: true });
         }
 
         const filepath = path.join(uploadsDir, filename);
+        console.log(`[UPLOAD] Writing to: ${filepath}`);
+        
         fs.writeFileSync(filepath, buffer);
+        console.log(`[UPLOAD] File written successfully`);
+
+        // Verify file exists
+        if (fs.existsSync(filepath)) {
+            const stats = fs.statSync(filepath);
+            console.log(`[UPLOAD] File verified: ${stats.size} bytes`);
+        } else {
+            console.error(`[UPLOAD] File exists check failed!`);
+        }
 
         return NextResponse.json({ url: `/uploads/${filename}` });
     } catch (err: any) {
-        return new NextResponse("Server error", { status: 500 });
+        console.error("[UPLOAD] Error:", err.message, err.stack);
+        return NextResponse.json(
+            { error: err.message || "Server error" },
+            { status: 500 }
+        );
     }
 }

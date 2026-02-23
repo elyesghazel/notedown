@@ -14,18 +14,23 @@ export function useImagePaste(insertTextAtCursor: (text: string) => void) {
             // For this lightweight textarea, we will just insert the correct one and rely on user to delete the loading one if desired, 
             // OR we can just omit the loading state and insert it when done.
             // Let's go with the cleaner "insert when done" approach:
-        } catch {
-            // Error uploading
+        } catch (e) {
+            console.error("[IMAGE_UPLOAD] Upload failed:", e);
         }
     };
 
     const processFile = async (file: File) => {
         if (!file.type.startsWith("image/")) return;
         try {
-            const { url } = await api.uploadImage(file);
-            insertTextAtCursor(`![image](${url})`);
-        } catch (e) {
-            console.error("Failed to upload image", e);
+            console.log(`[IMAGE_PASTE] Uploading image: ${file.name} (${file.size} bytes)`);
+            const response = await api.uploadImage(file);
+            console.log(`[IMAGE_PASTE] Upload successful: ${response.url}`);
+            insertTextAtCursor(`![image](${response.url})`);
+        } catch (e: any) {
+            const errorMsg = e?.message || String(e);
+            console.error("[IMAGE_PASTE] Failed to upload image:", errorMsg);
+            // Optionally show the error to the user in the editor
+            insertTextAtCursor(`![Error uploading image: ${errorMsg}]()`);
         }
     }
 
