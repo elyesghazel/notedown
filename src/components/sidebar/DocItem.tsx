@@ -21,9 +21,10 @@ interface DocItemProps {
     space: Space;
     folders: Folder[];
     depth: number;
+    publishedMap: Map<string, { editable: boolean }>;
 }
 
-export function DocItem({ node, space, folders, depth }: DocItemProps) {
+export function DocItem({ node, space, folders, depth, publishedMap }: DocItemProps) {
     const router = useRouter();
     const pathname = usePathname();
     const [moveOpen, setMoveOpen] = useState(false);
@@ -76,6 +77,12 @@ export function DocItem({ node, space, folders, depth }: DocItemProps) {
                     <Link href={href} className="flex flex-1 items-center overflow-hidden py-1 px-2">
                         <FileText className={`w-3.5 h-3.5 mr-2 shrink-0 ${isActive ? "text-primary" : "text-muted-foreground"}`} />
                         <span className="truncate">{node.name}</span>
+                        {publishedMap.get(node.id) && (
+                            <span
+                                className={`ml-2 inline-flex h-2 w-2 rounded-full ${publishedMap.get(node.id)?.editable ? "bg-emerald-500" : "bg-slate-400"}`}
+                                title={publishedMap.get(node.id)?.editable ? "Live shared" : "Published"}
+                            />
+                        )}
                     </Link>
 
                     <DropdownMenu>

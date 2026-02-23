@@ -6,12 +6,26 @@ const SECRET = new TextEncoder().encode("super-secret-key-change-in-prod");
 export async function getUserId(): Promise<string | null> {
     try {
         const cookieStore = await cookies();
+        
+        // Check for regular auth token first
         const token = cookieStore.get("auth-token")?.value;
-        if (!token) return null;
+        if (token) {
+            const { payload } = await jwtVerify(token, SECRET);
+            return payload.sub as string;
+        }
 
-        const { payload } = await jwtVerify(token, SECRET);
-        return payload.sub as string;
+        // Check for guest session
+        const guestId = cookieStore.get("guest-id")?.value;
+        if (guestId) return guestId;
+
+        return null;
     } catch {
+        // If JWT verification fails, check for guest session
+        try {
+            const cookieStore = await cookies();
+            const guestId = cookieStore.get("guest-id")?.value;
+            if (guestId) return guestId;
+        } catch {}
         return null;
     }
 }

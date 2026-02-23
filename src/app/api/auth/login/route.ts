@@ -16,21 +16,21 @@ export async function POST(req: Request) {
         }
 
         const token = await createToken(user.id);
-        const cookieStore = await cookies();
+        const res = NextResponse.json({
+            success: true,
+            user: { id: user.id, username: user.username, displayName: user.displayName || user.username }
+        });
 
-        cookieStore.set({
+        res.cookies.set({
             name: "auth-token",
             value: token,
             httpOnly: true,
             path: "/",
             secure: false, // Allow http for local development and docker-compose without SSL
-            maxAge: 30 * 24 * 60 * 60
+            maxAge: 30 * 24 * 60 * 60,
         });
 
-        return NextResponse.json({
-            success: true,
-            user: { id: user.id, username: user.username, displayName: user.displayName || user.username }
-        });
+        return res;
     } catch {
         return new NextResponse("Failed to login", { status: 500 });
     }
