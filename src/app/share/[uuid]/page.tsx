@@ -19,9 +19,9 @@ export default async function SharePage({ params }: { params: Promise<{ uuid: st
     const title = snapshot.title || "Published Note";
 
     return (
-        <div className="min-h-screen bg-background flex flex-col w-full mx-auto">
+        <div className="h-screen bg-background flex flex-col w-full mx-auto overflow-y-auto">
             {/* Header - responsive */}
-            <header className="h-14 border-b flex items-center justify-between px-4 md:px-6 sticky top-0 bg-background/90 backdrop-blur z-10">
+            <header className="h-14 border-b flex items-center justify-between px-4 md:px-6 sticky top-0 bg-background/90 backdrop-blur z-10 shrink-0">
                 <div className="flex items-center space-x-3 min-w-0">
                     <span className="font-semibold text-base md:text-lg tracking-tight truncate">{title}</span>
                     <span className="hidden sm:inline-flex px-2 py-0.5 rounded-full bg-primary/10 text-primary text-xs font-medium shrink-0">
@@ -32,12 +32,12 @@ export default async function SharePage({ params }: { params: Promise<{ uuid: st
             </header>
 
             {/* Content - centered card with proper prose styling */}
-            <main className="flex-1 flex justify-center w-5/6 mx-auto">
+            <main className="flex-1 flex justify-center w-full md:w-5/6 mx-auto">
                 <article className="w-full px-4 md:px-0 py-8 md:py-12">
                     <div className="bg-card border rounded-xl shadow-lg overflow-hidden">
                         <div className="h-1 bg-gradient-to-r from-primary to-primary/40" />
                         <div className="p-6 md:p-10">
-                            <Preview content={snapshot.content} />
+                            <Preview content={snapshot.content} className="max-w-none" />
                         </div>
                     </div>
                 </article>

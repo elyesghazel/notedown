@@ -9,6 +9,7 @@ import "highlight.js/styles/github-dark.css"; // Basic dark highlight theme
 interface PreviewProps {
     content: string;
     onContentChange?: (content: string) => void;
+    className?: string;
 }
 
 // Move outside to avoid unmounting on every content change
@@ -124,9 +125,9 @@ const ResizableImage = memo(({ src, alt: originalAlt, content, onContentChange, 
 
 ResizableImage.displayName = "ResizableImage";
 
-export function Preview({ content, onContentChange }: PreviewProps) {
+export function Preview({ content, onContentChange, className }: PreviewProps) {
     return (
-        <div className="prose prose-invert prose-stone max-w-none w-full h-full p-4 pb-28 md:pb-4 overflow-y-auto">
+        <div className={`prose prose-invert prose-stone max-w-none w-full ${className || "h-full p-4 pb-28 md:pb-4 overflow-y-auto"}`}>
             <ReactMarkdown
                 remarkPlugins={[remarkGfm]}
                 rehypePlugins={[rehypeHighlight]}
