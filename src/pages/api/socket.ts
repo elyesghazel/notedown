@@ -136,7 +136,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                     }
                 }
 
-                let ownerId = published.ownerId;
+                let ownerId: string | null | undefined = published.ownerId;
                 if (!ownerId) {
                     ownerId = findOwnerIdByDocId(published.docId);
                     if (ownerId) {
