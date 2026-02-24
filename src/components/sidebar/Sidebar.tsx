@@ -6,13 +6,14 @@ import { api } from "@/lib/api-client";
 import { SpaceItem } from "./SpaceItem";
 import { NewSpaceDialog } from "../dialogs/NewSpaceDialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Zap, Loader2, ChevronLeft, ChevronRight, RefreshCw, Menu, Search, HelpCircle, Pencil, CheckSquare, Tag, Settings, LogOut } from "lucide-react";
+import { Zap, Loader2, ChevronLeft, ChevronRight, RefreshCw, Menu, Search, HelpCircle, Pencil, CheckSquare, Tag, Settings, LogOut, Camera } from "lucide-react";
 import Link from "next/link";
 import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
 import { SearchDialog } from "../dialogs/SearchDialog";
+import { QuickLensDialog } from "../dialogs/QuickLensDialog";
 
 export function Sidebar() {
     const [mounted, setMounted] = useState(false);
@@ -71,6 +72,8 @@ export function Sidebar() {
 
     const [collapsed, setCollapsed] = useState(false);
     const [reloading, setReloading] = useState(false);
+    const [mobileOpen, setMobileOpen] = useState(false);
+    const [quickLensOpen, setQuickLensOpen] = useState(false);
     const pathname = usePathname();
 
     const openTasksCount = useMemo(() => {
@@ -87,6 +90,9 @@ export function Sidebar() {
     if (pathname?.startsWith("/login")) return null;
     if (pathname?.startsWith("/register")) return null;
 
+    const currentSpaceSlug = pathname?.split("/")[1];
+    const currentSpace = spaces?.find((space) => space.slug === currentSpaceSlug);
+
     if (!mounted) {
         return (
             <div className="hidden md:flex w-72 h-full border-r shrink-0 items-center justify-center bg-card">
@@ -100,6 +106,8 @@ export function Sidebar() {
         await mutate(() => true, undefined, { revalidate: true });
         setTimeout(() => setReloading(false), 500);
     };
+
+    const closeMobileSidebar = () => setMobileOpen(false);
 
     // Collapsed state (desktop only)
     if (collapsed) {
@@ -185,7 +193,7 @@ export function Sidebar() {
                 {activeWorkspaceId && <NewSpaceDialog workspaceId={activeWorkspaceId} />}
             </ScrollArea>
 
-            <div className="p-3 border-t space-y-1">
+            <div className="p-3 border-t space-y-2 hidden md:block">
                 {userInfo && (
                     <div className="px-2 py-2 mb-2 rounded-md bg-muted/50 text-xs">
                         <div className="text-muted-foreground">Logged in as</div>
@@ -196,49 +204,162 @@ export function Sidebar() {
                     </div>
                 )}
 
-                <button
-                    onClick={() => document.dispatchEvent(new KeyboardEvent("keydown", { key: "k", metaKey: true }))}
-                    className="w-full flex items-center justify-start text-sm font-medium text-muted-foreground hover:text-foreground transition-colors p-2 rounded-md hover:bg-muted"
-                >
-                    <Search className="w-4 h-4 mr-2" />
-                    Search...
-                    <span className="ml-auto text-xs text-muted-foreground bg-muted-foreground/10 px-1.5 py-0.5 rounded">⌘K</span>
-                </button>
-                <Link href="/quick" className="flex items-center text-sm font-medium text-muted-foreground hover:text-foreground transition-colors p-2 rounded-md hover:bg-muted">
-                    <Zap className="w-4 h-4 mr-2" />
-                    Quick Capture
-                </Link>
-                <Link href="/tasks" className="flex items-center text-sm font-medium text-muted-foreground hover:text-foreground transition-colors p-2 rounded-md hover:bg-muted">
-                    <CheckSquare className="w-4 h-4 mr-2" />
-                    Tasks
-                    {openTasksCount > 0 && (
-                        <span className="ml-auto bg-primary/20 text-primary text-[10px] px-1.5 py-0.5 rounded-full font-bold">
-                            {openTasksCount}
-                        </span>
-                    )}
-                </Link>
-                <Link href="/tags" className="flex items-center text-sm font-medium text-muted-foreground hover:text-foreground transition-colors p-2 rounded-md hover:bg-muted">
-                    <Tag className="w-4 h-4 mr-2" />
-                    Tags
-                </Link>
-                <Link href="/settings" className="flex items-center text-sm font-medium text-muted-foreground hover:text-foreground transition-colors p-2 rounded-md hover:bg-muted">
-                    <Settings className="w-4 h-4 mr-2" />
-                    Settings
-                </Link>
-                <Link href="/help" className="flex items-center text-sm font-medium text-muted-foreground hover:text-foreground transition-colors p-2 rounded-md hover:bg-muted">
-                    <HelpCircle className="w-4 h-4 mr-2" />
-                    Help & Guides
-                </Link>
-                <button
-                    onClick={async () => {
-                        await fetch("/api/auth/logout", { method: "POST" });
-                        window.location.href = "/login";
-                    }}
-                    className="w-full flex items-center text-sm font-medium text-muted-foreground hover:text-destructive transition-colors p-2 rounded-md hover:bg-destructive/10"
-                >
-                    <LogOut className="w-4 h-4 mr-2" />
-                    Sign Out
-                </button>
+                <div className="grid grid-cols-2 gap-2">
+                    <Link href="/quick" className="flex items-center justify-center text-xs font-medium text-muted-foreground hover:text-foreground transition-colors p-2 rounded-md hover:bg-muted">
+                        <Zap className="w-4 h-4 mr-1" />
+                        Quick
+                    </Link>
+                    <Link href="/tasks" className="flex items-center justify-center text-xs font-medium text-muted-foreground hover:text-foreground transition-colors p-2 rounded-md hover:bg-muted">
+                        <CheckSquare className="w-4 h-4 mr-1" />
+                        Tasks
+                        {openTasksCount > 0 && (
+                            <span className="ml-1 bg-primary/20 text-primary text-[9px] px-1 py-0.5 rounded-full font-bold">
+                                {openTasksCount}
+                            </span>
+                        )}
+                    </Link>
+                    <button
+                        onClick={() => setQuickLensOpen(true)}
+                        className="flex items-center justify-center text-xs font-medium text-muted-foreground hover:text-foreground transition-colors p-2 rounded-md hover:bg-muted"
+                    >
+                        <Camera className="w-4 h-4 mr-1" />
+                        Lens
+                    </button>
+                    <button
+                        onClick={() => {
+                            document.dispatchEvent(new KeyboardEvent("keydown", { key: "k", metaKey: true }));
+                        }}
+                        className="flex items-center justify-center text-xs font-medium text-muted-foreground hover:text-foreground transition-colors p-2 rounded-md hover:bg-muted"
+                    >
+                        <Search className="w-4 h-4 mr-1" />
+                        Search
+                    </button>
+                </div>
+
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" className="w-full justify-center text-xs text-muted-foreground">
+                            <Menu className="w-4 h-4 mr-2" /> More
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="start" className="w-52">
+                        <DropdownMenuItem asChild>
+                            <Link href="/tags">
+                                <Tag className="w-4 h-4 mr-2" /> Tags
+                            </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild>
+                            <Link href="/settings">
+                                <Settings className="w-4 h-4 mr-2" /> Settings
+                            </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild>
+                            <Link href="/help">
+                                <HelpCircle className="w-4 h-4 mr-2" /> Help & Guides
+                            </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                            onClick={async () => {
+                                await fetch("/api/auth/logout", { method: "POST" });
+                                window.location.href = "/login";
+                            }}
+                            className="text-destructive"
+                        >
+                            <LogOut className="w-4 h-4 mr-2" /> Sign Out
+                        </DropdownMenuItem>
+                    </DropdownMenuContent>
+                </DropdownMenu>
+            </div>
+
+            <div className="p-2 border-t md:hidden">
+                {userInfo && (
+                    <div className="px-2 py-1.5 mb-2 rounded-md bg-muted/50 text-[11px]">
+                        <div className="text-muted-foreground">Logged in as</div>
+                        <div className="font-semibold truncate text-foreground">
+                            {userInfo.displayName}
+                            {userInfo.isGuest && <span className="text-muted-foreground text-[10px] ml-1">(guest)</span>}
+                        </div>
+                    </div>
+                )}
+
+                <div className="grid grid-cols-2 gap-1">
+                    <button
+                        onClick={() => {
+                            document.dispatchEvent(new KeyboardEvent("keydown", { key: "k", metaKey: true }));
+                            closeMobileSidebar();
+                        }}
+                        className="flex items-center justify-center text-xs font-medium text-muted-foreground hover:text-foreground transition-colors p-2 rounded-md hover:bg-muted"
+                    >
+                        <Search className="w-4 h-4 mr-1" />
+                        Search
+                    </button>
+                    <Link
+                        href="/quick"
+                        onClick={closeMobileSidebar}
+                        className="flex items-center justify-center text-xs font-medium text-muted-foreground hover:text-foreground transition-colors p-2 rounded-md hover:bg-muted"
+                    >
+                        <Zap className="w-4 h-4 mr-1" />
+                        Quick
+                    </Link>
+                    <Link
+                        href="/tasks"
+                        onClick={closeMobileSidebar}
+                        className="flex items-center justify-center text-xs font-medium text-muted-foreground hover:text-foreground transition-colors p-2 rounded-md hover:bg-muted"
+                    >
+                        <CheckSquare className="w-4 h-4 mr-1" />
+                        Tasks
+                        {openTasksCount > 0 && (
+                            <span className="ml-1 bg-primary/20 text-primary text-[9px] px-1 py-0.5 rounded-full font-bold">
+                                {openTasksCount}
+                            </span>
+                        )}
+                    </Link>
+                    <button
+                        onClick={() => {
+                            setQuickLensOpen(true);
+                            closeMobileSidebar();
+                        }}
+                        className="flex items-center justify-center text-xs font-medium text-muted-foreground hover:text-foreground transition-colors p-2 rounded-md hover:bg-muted"
+                    >
+                        <Camera className="w-4 h-4 mr-1" />
+                        Lens
+                    </button>
+                    <Link
+                        href="/settings"
+                        onClick={closeMobileSidebar}
+                        className="flex items-center justify-center text-xs font-medium text-muted-foreground hover:text-foreground transition-colors p-2 rounded-md hover:bg-muted"
+                    >
+                        <Settings className="w-4 h-4 mr-1" />
+                        Settings
+                    </Link>
+                    <Link
+                        href="/tags"
+                        onClick={closeMobileSidebar}
+                        className="flex items-center justify-center text-xs font-medium text-muted-foreground hover:text-foreground transition-colors p-2 rounded-md hover:bg-muted"
+                    >
+                        <Tag className="w-4 h-4 mr-1" />
+                        Tags
+                    </Link>
+                    <Link
+                        href="/help"
+                        onClick={closeMobileSidebar}
+                        className="flex items-center justify-center text-xs font-medium text-muted-foreground hover:text-foreground transition-colors p-2 rounded-md hover:bg-muted"
+                    >
+                        <HelpCircle className="w-4 h-4 mr-1" />
+                        Help
+                    </Link>
+                    <button
+                        onClick={async () => {
+                            await fetch("/api/auth/logout", { method: "POST" });
+                            window.location.href = "/login";
+                        }}
+                        className="col-span-2 flex items-center justify-center text-xs font-medium text-muted-foreground hover:text-destructive transition-colors p-2 rounded-md hover:bg-destructive/10"
+                    >
+                        <LogOut className="w-4 h-4 mr-1" />
+                        Sign Out
+                    </button>
+                </div>
             </div>
         </div>
     );
@@ -252,18 +373,34 @@ export function Sidebar() {
 
             {/* Mobile Sidebar */}
             <div className="md:hidden fixed top-3 left-3 z-50">
-                <Sheet>
+                <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
                     <SheetTrigger asChild>
                         <Button variant="outline" size="icon" className="h-9 w-9 bg-background/90 backdrop-blur shadow-md">
                             <Menu className="h-4 w-4" />
                         </Button>
                     </SheetTrigger>
-                    <SheetContent side="left" className="p-0 w-72" showCloseButton={false}>
+                    <SheetContent
+                        side="left"
+                        className="p-0 w-72"
+                        showCloseButton={false}
+                        onClickCapture={(e) => {
+                            const target = e.target as HTMLElement | null;
+                            if (target?.closest("a")) {
+                                closeMobileSidebar();
+                            }
+                        }}
+                    >
                         <SheetTitle className="sr-only">Navigation</SheetTitle>
                         {sidebarInner}
                     </SheetContent>
                 </Sheet>
             </div>
+            <QuickLensDialog
+                open={quickLensOpen}
+                onOpenChange={setQuickLensOpen}
+                defaultWorkspaceId={activeWorkspaceId}
+                defaultSpaceId={currentSpace?.id}
+            />
         </>
     );
 }

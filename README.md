@@ -10,6 +10,9 @@ A powerful, high-performance Markdown Note-Taking Platform designed for speed, o
 - **Interactive Image Resizing**: Hover over an image in the preview pane and drag the blue handle to resize. Your Markdown code updates automatically!
 - **Dual-Pane Interface**: Edit in real-time with GFM (GitHub Flavored Markdown) support.
 - **Image Paste & Drag-and-Drop**: Paste images directly into the editor for instant upload and embedding.
+- **Formatting Toolbar**: Bold, italic, lists, quotes, links, and task lists at a click.
+- **Auto-Pair Markdown**: Auto-closes pairs like ** and __ while typing for faster formatting.
+- **Camera/Image Insert**: Snap a photo or pick an image and insert it as Markdown.
 - **Find in File (Ctrl+F)**: Search for text within the current document with a sleek, distraction-free widget.
 
 ### 🔍 Search & Quick Actions
@@ -78,6 +81,8 @@ Notedown is configured to persist all your data and uploaded images in two local
 | `Ctrl+K` / `Cmd+K` | Open Global Search |
 | `Ctrl+Shift+P` / `Cmd+Shift+P` | Open Command Palette |
 | `Ctrl+F` / `Cmd+F` | Find in Current Document |
+| `Ctrl+B` / `Cmd+B` | Bold |
+| `Ctrl+I` / `Cmd+I` | Italic |
 | `Esc` | Close Dialogs / Find Widget |
 | `Enter` (in Find) | Next Match |
 | `Shift+Enter` (in Find) | Previous Match |

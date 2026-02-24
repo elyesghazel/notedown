@@ -56,5 +56,5 @@ export function useImagePaste(insertTextAtCursor: (text: string) => void) {
         }
     };
 
-    return { onPaste, onDrop };
+    return { onPaste, onDrop, processFile };
 }

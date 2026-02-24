@@ -14,6 +14,7 @@ interface EditorProps {
 
 export function Editor({ content, onChange }: EditorProps) {
     const textareaRef = useRef<HTMLTextAreaElement>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
     const searchParams = useSearchParams();
 
     const insertTextAtCursor = (text: string) => {
@@ -30,7 +31,7 @@ export function Editor({ content, onChange }: EditorProps) {
         }, 0);
     };
 
-    const { onPaste, onDrop } = useImagePaste(insertTextAtCursor);
+    const { onPaste, onDrop, processFile } = useImagePaste(insertTextAtCursor);
 
     // Find functionality
     const [findOpen, setFindOpen] = useState(false);
@@ -95,21 +96,145 @@ export function Editor({ content, onChange }: EditorProps) {
         highlightMatch(prev);
     };
 
+    const setSelection = (start: number, end: number = start) => {
+        const el = textareaRef.current;
+        if (!el) return;
+        setTimeout(() => {
+            el.selectionStart = start;
+            el.selectionEnd = end;
+            el.focus();
+        }, 0);
+    };
+
+    const wrapSelection = (prefix: string, suffix: string) => {
+        const el = textareaRef.current;
+        if (!el) return;
+        const start = el.selectionStart;
+        const end = el.selectionEnd;
+        const selected = content.substring(start, end);
+        const newContent = content.substring(0, start) + prefix + selected + suffix + content.substring(end);
+        onChange(newContent);
+        if (selected.length === 0) {
+            setSelection(start + prefix.length);
+        } else {
+            setSelection(start + prefix.length, start + prefix.length + selected.length);
+        }
+    };
+
+    const prefixLines = (prefix: string) => {
+        const el = textareaRef.current;
+        if (!el) return;
+        const start = el.selectionStart;
+        const end = el.selectionEnd;
+        const lineStart = content.lastIndexOf("\n", start - 1) + 1;
+        const lineEnd = content.indexOf("\n", end);
+        const safeLineEnd = lineEnd === -1 ? content.length : lineEnd;
+        const segment = content.substring(lineStart, safeLineEnd);
+        const lines = segment.split("\n");
+        const updatedLines = lines.map((line) => (line.startsWith(prefix) ? line : `${prefix}${line}`));
+        const updatedSegment = updatedLines.join("\n");
+        const newContent = content.substring(0, lineStart) + updatedSegment + content.substring(safeLineEnd);
+        const delta = updatedSegment.length - segment.length;
+        onChange(newContent);
+        setSelection(start + prefix.length, end + delta);
+    };
+
+    const insertLink = () => {
+        const el = textareaRef.current;
+        if (!el) return;
+        const start = el.selectionStart;
+        const end = el.selectionEnd;
+        const selected = content.substring(start, end);
+        if (selected.length > 0) {
+            const newContent = content.substring(0, start) + `[${selected}](url)` + content.substring(end);
+            onChange(newContent);
+            const urlStart = start + selected.length + 3;
+            setSelection(urlStart, urlStart + 3);
+            return;
+        }
+        const newContent = content.substring(0, start) + "[]()" + content.substring(end);
+        onChange(newContent);
+        setSelection(start + 1, start + 1);
+    };
+
+    const handleFormatAction = (type: string) => {
+        switch (type) {
+            case "bold":
+                wrapSelection("**", "**");
+                break;
+            case "italic":
+                wrapSelection("_", "_");
+                break;
+            case "strike":
+                wrapSelection("~~", "~~");
+                break;
+            case "code":
+                wrapSelection("`", "`");
+                break;
+            case "quote":
+                prefixLines("> ");
+                break;
+            case "ul":
+                prefixLines("- ");
+                break;
+            case "ol":
+                prefixLines("1. ");
+                break;
+            case "task":
+                prefixLines("- [ ] ");
+                break;
+            case "link":
+                insertLink();
+                break;
+            default:
+                break;
+        }
+    };
+
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
             if ((e.ctrlKey || e.metaKey) && e.key === "f") {
                 e.preventDefault();
                 setFindOpen(true);
+                return;
+            }
+            if ((e.ctrlKey || e.metaKey) && e.key === "b") {
+                e.preventDefault();
+                handleFormatAction("bold");
+                return;
+            }
+            if ((e.ctrlKey || e.metaKey) && e.key === "i") {
+                e.preventDefault();
+                handleFormatAction("italic");
+                return;
             }
             if (e.key === "Escape" && findOpen) {
                 setFindOpen(false);
                 setFindText("");
                 textareaRef.current?.focus();
+                return;
             }
         };
         document.addEventListener("keydown", handleKeyDown);
         return () => document.removeEventListener("keydown", handleKeyDown);
-    }, [findOpen]);
+    }, [findOpen, content]);
+
+    useEffect(() => {
+        const handleFormat = (event: Event) => {
+            const custom = event as CustomEvent<{ type: string }>;
+            if (!custom.detail?.type) return;
+            handleFormatAction(custom.detail.type);
+        };
+        const handlePickImage = () => {
+            fileInputRef.current?.click();
+        };
+        window.addEventListener("editor:format", handleFormat as EventListener);
+        window.addEventListener("editor:pick-image", handlePickImage);
+        return () => {
+            window.removeEventListener("editor:format", handleFormat as EventListener);
+            window.removeEventListener("editor:pick-image", handlePickImage);
+        };
+    }, [content]);
 
     const backdropRef = useRef<HTMLDivElement>(null);
 
@@ -117,6 +242,57 @@ export function Editor({ content, onChange }: EditorProps) {
         if (backdropRef.current) {
             backdropRef.current.scrollTop = e.currentTarget.scrollTop;
             backdropRef.current.scrollLeft = e.currentTarget.scrollLeft;
+        }
+    };
+
+    const handleEditorKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+        if (e.key === "Tab") {
+            e.preventDefault();
+            insertTextAtCursor("    ");
+            return;
+        }
+
+        const el = textareaRef.current;
+        if (!el) return;
+
+        if (e.ctrlKey || e.metaKey || e.altKey) return;
+
+        const start = el.selectionStart;
+        const end = el.selectionEnd;
+        const prevChar = content[start - 1] || "";
+        const prevPrevChar = content[start - 2] || "";
+
+        if (e.key === "*" && start === end && prevChar === "*" && prevPrevChar !== "*" && prevPrevChar !== "\\") {
+            e.preventDefault();
+            const newContent = content.substring(0, start - 1) + "****" + content.substring(end);
+            onChange(newContent);
+            setSelection(start + 1, start + 1);
+            return;
+        }
+
+        if (e.key === "_" && start === end && prevChar === "_" && prevPrevChar !== "_" && prevPrevChar !== "\\") {
+            e.preventDefault();
+            const newContent = content.substring(0, start - 1) + "____" + content.substring(end);
+            onChange(newContent);
+            setSelection(start + 1, start + 1);
+            return;
+        }
+
+        const pairMap: Record<string, string> = {
+            "(": ")",
+            "[": "]",
+            "{": "}",
+            "\"": "\"",
+            "'": "'",
+            "`": "`",
+        };
+
+        const closing = pairMap[e.key];
+        if (closing && start === end) {
+            e.preventDefault();
+            const newContent = content.substring(0, start) + e.key + closing + content.substring(end);
+            onChange(newContent);
+            setSelection(start + 1, start + 1);
         }
     };
 
@@ -171,18 +347,25 @@ export function Editor({ content, onChange }: EditorProps) {
                 ref={textareaRef}
                 value={content}
                 onChange={(e) => onChange(e.target.value)}
-                onKeyDown={(e) => {
-                    if (e.key === "Tab") {
-                        e.preventDefault();
-                        insertTextAtCursor("    ");
-                    }
-                }}
+                onKeyDown={handleEditorKeyDown}
                 onPaste={onPaste}
                 onDrop={onDrop}
                 onScroll={handleScroll}
                 onDragOver={(e) => e.preventDefault()}
                 className="w-full h-full p-4 absolute inset-0 bg-transparent resize-none outline-none border-none font-mono text-sm leading-relaxed pb-28 md:pb-8 z-10 wrap-break-word"
                 placeholder="Start typing your markdown..."
+            />
+            <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                capture="environment"
+                className="hidden"
+                onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) processFile(file);
+                    e.currentTarget.value = "";
+                }}
             />
         </div>
     );

@@ -2,7 +2,8 @@
 
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { Eye, FileEdit, Share, Download } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Eye, FileEdit, Share, Download, Bold, Italic, Strikethrough, Code, Link2, List, ListOrdered, Quote, CheckSquare, ImagePlus, Type } from "lucide-react";
 import { Document } from "@/lib/types";
 import { useState } from "react";
 import { PublishDialog } from "../dialogs/PublishDialog";
@@ -22,6 +23,14 @@ export function Toolbar({ doc, mode, setMode, isSaving, isMobile = false }: Tool
     const [publishOpen, setPublishOpen] = useState(false);
     const [exportOpen, setExportOpen] = useState(false);
 
+    const emitFormat = (type: string) => {
+        window.dispatchEvent(new CustomEvent("editor:format", { detail: { type } }));
+    };
+
+    const emitPickImage = () => {
+        window.dispatchEvent(new CustomEvent("editor:pick-image"));
+    };
+
     if (isMobile) {
         // Mobile: floating bottom bar with just edit/preview toggle + actions
         return (
@@ -37,8 +46,10 @@ export function Toolbar({ doc, mode, setMode, isSaving, isMobile = false }: Tool
                 </div>
 
                 {/* Bottom floating bar */}
-                <div className="fixed bottom-0 left-0 right-0 z-40 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 px-4 py-2 flex items-center justify-between safe-area-bottom">
-                    <div className="flex items-center space-x-1 border rounded-lg p-1 bg-muted/50">
+                <div className="fixed bottom-0 left-0 right-0 z-40 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 px-3 py-2 safe-area-bottom">
+                    <div className="flex flex-col gap-2">
+                        <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center space-x-1 border rounded-lg p-1 bg-muted/50">
                         <Button
                             variant={mode === "edit" ? "secondary" : "ghost"}
                             size="sm"
@@ -57,15 +68,60 @@ export function Toolbar({ doc, mode, setMode, isSaving, isMobile = false }: Tool
                             <Eye className="w-3.5 h-3.5 mr-1.5" />
                             Preview
                         </Button>
-                    </div>
+                            </div>
 
-                    <div className="flex items-center space-x-2">
+                            <div className="flex items-center space-x-2">
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button variant="outline" size="sm" className="h-8 px-2" title="Formatting">
+                                    <Type className="w-3.5 h-3.5" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-48">
+                                <DropdownMenuItem onClick={() => emitFormat("bold")}>
+                                    <Bold className="w-4 h-4 mr-2" /> Bold
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => emitFormat("italic")}>
+                                    <Italic className="w-4 h-4 mr-2" /> Italic
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => emitFormat("strike")}>
+                                    <Strikethrough className="w-4 h-4 mr-2" /> Strikethrough
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => emitFormat("code")}>
+                                    <Code className="w-4 h-4 mr-2" /> Inline Code
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => emitFormat("link")}>
+                                    <Link2 className="w-4 h-4 mr-2" /> Link
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => emitFormat("quote")}>
+                                    <Quote className="w-4 h-4 mr-2" /> Quote
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => emitFormat("ul")}>
+                                    <List className="w-4 h-4 mr-2" /> Bullet List
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => emitFormat("ol")}>
+                                    <ListOrdered className="w-4 h-4 mr-2" /> Numbered List
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => emitFormat("task")}>
+                                    <CheckSquare className="w-4 h-4 mr-2" /> Task List
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={emitPickImage}>
+                                    <ImagePlus className="w-4 h-4 mr-2" /> Insert Image
+                                </DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
                         <Button variant="outline" size="sm" className="h-8 px-2" onClick={() => setExportOpen(true)}>
                             <Download className="w-3.5 h-3.5" />
                         </Button>
                         <Button size="sm" className="h-8 px-2" onClick={() => setPublishOpen(true)}>
                             <Share className="w-3.5 h-3.5" />
                         </Button>
+                            </div>
+                        </div>
+                        <div className="flex items-center justify-between text-[11px] text-muted-foreground px-1">
+                            <span className="truncate">{doc.name}</span>
+                            <span>{isSaving ? "Saving..." : "Saved"}</span>
+                        </div>
                     </div>
                 </div>
 
@@ -112,6 +168,89 @@ export function Toolbar({ doc, mode, setMode, isSaving, isMobile = false }: Tool
                             </Button>
                         </TooltipTrigger>
                         <TooltipContent>Preview Mode</TooltipContent>
+                    </Tooltip>
+                </div>
+
+                <div className="flex items-center space-x-1 border rounded-md p-1 bg-background">
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button variant="ghost" size="sm" className="h-8 px-2" onClick={() => emitFormat("bold")}> 
+                                <Bold className="w-4 h-4" />
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Bold</TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button variant="ghost" size="sm" className="h-8 px-2" onClick={() => emitFormat("italic")}>
+                                <Italic className="w-4 h-4" />
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Italic</TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button variant="ghost" size="sm" className="h-8 px-2" onClick={() => emitFormat("strike")}>
+                                <Strikethrough className="w-4 h-4" />
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Strikethrough</TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button variant="ghost" size="sm" className="h-8 px-2" onClick={() => emitFormat("code")}> 
+                                <Code className="w-4 h-4" />
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Inline Code</TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button variant="ghost" size="sm" className="h-8 px-2" onClick={() => emitFormat("link")}>
+                                <Link2 className="w-4 h-4" />
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Link</TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button variant="ghost" size="sm" className="h-8 px-2" onClick={() => emitFormat("quote")}>
+                                <Quote className="w-4 h-4" />
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Quote</TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button variant="ghost" size="sm" className="h-8 px-2" onClick={() => emitFormat("ul")}>
+                                <List className="w-4 h-4" />
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Bullet List</TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button variant="ghost" size="sm" className="h-8 px-2" onClick={() => emitFormat("ol")}>
+                                <ListOrdered className="w-4 h-4" />
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Numbered List</TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button variant="ghost" size="sm" className="h-8 px-2" onClick={() => emitFormat("task")}>
+                                <CheckSquare className="w-4 h-4" />
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Task List</TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button variant="ghost" size="sm" className="h-8 px-2" onClick={emitPickImage}>
+                                <ImagePlus className="w-4 h-4" />
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Insert Image</TooltipContent>
                     </Tooltip>
                 </div>
 
