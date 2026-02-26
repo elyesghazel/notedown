@@ -1,21 +1,40 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { getUserId } from "@/lib/auth";
+import { jwtVerify } from "jose";
+
+function getSecret() {
+    const jwtSecret = process.env.JWT_SECRET || "super-secret-key-change-in-prod";
+    return new TextEncoder().encode(jwtSecret);
+}
 
 export async function GET() {
     const cookieStore = await cookies();
     const authToken = cookieStore.get("auth-token");
     
-    console.log("[DEBUG] All cookies:", cookieStore.getAll());
-    console.log("[DEBUG] Auth token:", authToken);
+    console.log("[DEBUG COOKIES] All cookies:", cookieStore.getAll());
+    console.log("[DEBUG COOKIES] Auth token:", authToken?.value?.substring(0, 50));
     
-    const userId = await getUserId();
-    console.log("[DEBUG] getUserId result:", userId);
+    let jwtStatus = "no token";
+    let jwtPayload = null;
+    
+    if (authToken?.value) {
+        try {
+            const { payload } = await jwtVerify(authToken.value, getSecret());
+            jwtStatus = "valid";
+            jwtPayload = payload;
+        } catch (err: any) {
+            jwtStatus = `invalid: ${err.message}`;
+        }
+    }
     
     return NextResponse.json({
         authTokenExists: !!authToken,
-        authTokenValue: authToken?.value?.substring(0, 20) + "..." || null,
-        userIdFromAuth: userId,
-        allCookies: cookieStore.getAll().map(c => ({ name: c.name, value: c.value.substring(0, 20) }))
+        authTokenValue: authToken?.value?.substring(0, 50) + "..." || null,
+        jwtStatus,
+        jwtPayload,
+        secretLength: getSecret().byteLength,
+        environment: process.env.NODE_ENV,
+        allCookies: cookieStore.getAll().map(c => ({ name: c.name, length: c.value.length }))
     });
 }
+

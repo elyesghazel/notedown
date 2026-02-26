@@ -16,8 +16,15 @@ export async function getUserId(): Promise<string | null> {
         // Check for regular auth token first
         const token = cookieStore.get("auth-token")?.value;
         if (token) {
-            const { payload } = await jwtVerify(token, getSecret());
-            return payload.sub as string;
+            try {
+                const { payload } = await jwtVerify(token, getSecret());
+                return payload.sub as string;
+            } catch (jwtError: any) {
+                console.error("[AUTH] JWT verification failed:", jwtError.message);
+                console.error("[AUTH] Token:", token.substring(0, 50) + "...");
+                console.error("[AUTH] Secret length:", getSecret().byteLength);
+                // Fall through to guest check
+            }
         }
 
         // Check for guest session
@@ -25,7 +32,8 @@ export async function getUserId(): Promise<string | null> {
         if (guestId) return guestId;
 
         return null;
-    } catch {
+    } catch (err: any) {
+        console.error("[AUTH] getUserId error:", err.message);
         // If JWT verification fails, check for guest session
         try {
             const cookieStore = await cookies();

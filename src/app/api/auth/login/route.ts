@@ -36,6 +36,11 @@ export async function POST(req: Request) {
 
         const sameSite = (process.env.COOKIE_SAME_SITE as "strict" | "lax" | "none") || "lax";
         const secure = process.env.NODE_ENV === "production" || process.env.FORCE_SECURE_COOKIE === "true";
+        
+        // On localhost, don't set domain. On production, only set domain if it's explicitly configured
+        const cookieDomain = process.env.COOKIE_DOMAIN && !process.env.COOKIE_DOMAIN.includes("localhost") 
+            ? process.env.COOKIE_DOMAIN 
+            : undefined;
 
         res.cookies.set({
             name: "auth-token",
@@ -43,9 +48,9 @@ export async function POST(req: Request) {
             httpOnly: true,
             path: "/",
             secure,
-            sameSite, // CSRF protection
+            sameSite,
             maxAge: 30 * 24 * 60 * 60,
-            domain: process.env.COOKIE_DOMAIN || undefined,
+            ...(cookieDomain && { domain: cookieDomain }), // Only set domain if it has a value
         });
 
         return res;

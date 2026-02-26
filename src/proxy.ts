@@ -2,7 +2,10 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { jwtVerify } from "jose";
 
-const SECRET = new TextEncoder().encode("super-secret-key-change-in-prod");
+function getSecret() {
+    const jwtSecret = process.env.JWT_SECRET || "super-secret-key-change-in-prod";
+    return new TextEncoder().encode(jwtSecret);
+}
 
 export async function proxy(req: NextRequest) {
     const { pathname } = req.nextUrl;
@@ -13,6 +16,8 @@ export async function proxy(req: NextRequest) {
         pathname.startsWith("/login") ||
         pathname.startsWith("/register") ||
         pathname.startsWith("/api/auth") ||
+        pathname.startsWith("/api/debug") || // Debug endpoints
+        pathname.startsWith("/api/simple-debug") || // Simple debug
         pathname.startsWith("/share") ||
         pathname.startsWith("/api/publish") || // Viewing published pages needs API access
         pathname.startsWith("/api/socket") || // WebSocket handshake
@@ -30,9 +35,10 @@ export async function proxy(req: NextRequest) {
     }
 
     try {
-        await jwtVerify(token, SECRET);
+        await jwtVerify(token, getSecret());
         return NextResponse.next();
     } catch (err) {
+        console.error("[PROXY] JWT verification failed:", err);
         return NextResponse.redirect(new URL("/login", req.url));
     }
 }
