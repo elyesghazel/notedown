@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextResponse, NextRequest } from "next/server";
 import { getUserId } from "@/lib/auth";
 import { getPublished, getDocuments, saveDocuments, getWorkspaces, saveWorkspaces, getSpaces, saveSpaces } from "@/lib/db";
 import { Document, Workspace, Space } from "@/lib/types";
@@ -7,7 +7,7 @@ import { slugify } from "@/lib/slugify";
 import bcrypt from "bcryptjs";
 import { cookies } from "next/headers";
 
-export async function POST(req: Request, { params }: { params: Promise<{ uuid: string }> }) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ uuid: string }> }) {
     let userId = await getUserId();
     const { uuid } = await params;
     const { editPassword, content, guestName, title } = await req.json();

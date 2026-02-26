@@ -1,9 +1,9 @@
 import { getUserId } from "@/lib/auth";
-import { NextResponse } from "next/server";
+import { NextResponse, NextRequest } from "next/server";
 import { getWorkspaces, saveWorkspaces, getSpaces, saveSpaces } from "@/lib/db";
 import { slugify } from "@/lib/slugify";
 
-export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     const userId = await getUserId();
     if (!userId) return new NextResponse("Unauthorized", { status: 401 });
     const { id } = await params;
@@ -19,7 +19,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     return NextResponse.json(workspaces[idx]);
 }
 
-export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     const userId = await getUserId();
     if (!userId) return new NextResponse("Unauthorized", { status: 401 });
     const { id } = await params;

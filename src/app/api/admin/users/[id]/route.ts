@@ -1,8 +1,8 @@
-import { NextResponse } from "next/server";
+import { NextResponse, NextRequest } from "next/server";
 import { getUserId } from "@/lib/auth";
 import { getUsers, saveUsers } from "@/lib/db";
 
-export async function PATCH(req: Request, { params }: { params: { id: string } }) {
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     const userId = await getUserId();
     if (!userId) return new NextResponse("Unauthorized", { status: 401 });
 
@@ -13,7 +13,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
         return new NextResponse("Forbidden: Admin only", { status: 403 });
     }
 
-    const targetId = params.id;
+    const { id: targetId } = await params;
     const targetIdx = users.findIndex((u) => u.id === targetId);
     
     if (targetIdx === -1) {
@@ -32,7 +32,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     return NextResponse.json({ success: true });
 }
 
-export async function DELETE(req: Request, { params }: { params: { id: string } }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     const userId = await getUserId();
     if (!userId) return new NextResponse("Unauthorized", { status: 401 });
 
@@ -43,7 +43,7 @@ export async function DELETE(req: Request, { params }: { params: { id: string } 
         return new NextResponse("Forbidden: Admin only", { status: 403 });
     }
 
-    const targetId = params.id;
+    const { id: targetId } = await params;
     
     // Cannot delete yourself
     if (targetId === userId) {

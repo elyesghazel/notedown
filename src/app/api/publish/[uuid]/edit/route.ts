@@ -1,9 +1,9 @@
-import { NextResponse } from "next/server";
+import { NextResponse, NextRequest } from "next/server";
 import { getPublished, savePublished, getUsers, getDocuments, saveDocuments } from "@/lib/db";
 import bcrypt from "bcryptjs";
 import { checkRateLimit, getClientIp } from "@/lib/ratelimit";
 
-export async function POST(req: Request, { params }: { params: Promise<{ uuid: string }> }) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ uuid: string }> }) {
     const { uuid } = await params;
     
     // Rate limit: 10 edits per 5 minutes per IP per document

@@ -1,7 +1,7 @@
-import { NextResponse } from "next/server";
+import { NextResponse, NextRequest } from "next/server";
 import { getPublished, savePublished } from "@/lib/db";
 
-export async function GET(req: Request, { params }: { params: Promise<{ uuid: string }> }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ uuid: string }> }) {
     const { uuid } = await params;
     const publishedList = getPublished();
     const snapshot = publishedList.find((p) => p.uuid === uuid);
@@ -10,7 +10,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ uuid: st
     return NextResponse.json(snapshot);
 }
 
-export async function DELETE(req: Request, { params }: { params: Promise<{ uuid: string }> }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ uuid: string }> }) {
     const { uuid } = await params;
     const publishedList = getPublished();
     const filtered = publishedList.filter((p) => p.uuid !== uuid);
