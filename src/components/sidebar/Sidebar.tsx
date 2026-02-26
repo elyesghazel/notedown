@@ -347,6 +347,13 @@ export function Sidebar() {
                                 <Settings className="w-4 h-4 mr-2" /> Settings
                             </Link>
                         </DropdownMenuItem>
+                        {userInfo?.isAdmin && (
+                            <DropdownMenuItem asChild>
+                                <Link href="/admin" className="text-purple-600">
+                                    <Settings className="w-4 h-4 mr-2" /> Admin Panel
+                                </Link>
+                            </DropdownMenuItem>
+                        )}
                         <DropdownMenuItem asChild>
                             <Link href="/help">
                                 <HelpCircle className="w-4 h-4 mr-2" /> Help & Guides

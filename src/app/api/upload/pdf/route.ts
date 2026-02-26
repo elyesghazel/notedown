@@ -7,6 +7,7 @@ import { getUserId } from "@/lib/auth";
 import { getUploads, saveUploads, getUsers } from "@/lib/db";
 import { UploadedFile } from "@/lib/types";
 import { buildRemotePath, webdavPut } from "@/lib/webdav";
+import { checkStorageLimit } from "@/lib/storage";
 
 export async function POST(req: Request) {
     const userId = await getUserId();
@@ -35,6 +36,7 @@ export async function POST(req: Request) {
         const webdav = user?.webdav;
 
         if (webdav?.enabled && webdav.preferPdf) {
+            // WebDAV upload - no storage limit check (external storage)
             const remotePath = buildRemotePath(webdav, filename);
             await webdavPut(webdav, remotePath, buffer, "application/pdf");
 
@@ -54,6 +56,14 @@ export async function POST(req: Request) {
             saveUploads(userId, uploads);
 
             return NextResponse.json({ url: record.url });
+        }
+
+        // Local upload - check storage limit
+        const fileSizeMB = file.size / (1024 * 1024);
+        const storageCheck = checkStorageLimit(userId, user?.storageCapMB, fileSizeMB);
+        
+        if (!storageCheck.allowed) {
+            return new NextResponse(storageCheck.message || "Storage limit exceeded", { status: 413 });
         }
 
         const uploadsDir = path.join(process.cwd(), "public", "uploads");

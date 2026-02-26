@@ -10,6 +10,7 @@ import { Loader2 } from "lucide-react";
 export default function RegisterPage() {
     const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
+    const [inviteCode, setInviteCode] = useState("");
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
     const router = useRouter();
@@ -23,7 +24,7 @@ export default function RegisterPage() {
             const res = await fetch("/api/auth/register", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ username, password })
+                body: JSON.stringify({ username, password, inviteCode })
             });
 
             if (res.ok) {
@@ -61,6 +62,14 @@ export default function RegisterPage() {
 
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div className="space-y-2">
+                        <Input
+                            placeholder="Invite Code"
+                            required
+                            value={inviteCode}
+                            onChange={e => setInviteCode(e.target.value.toUpperCase())}
+                            className="font-mono"
+                            maxLength={8}
+                        />
                         <Input
                             placeholder="Username"
                             required

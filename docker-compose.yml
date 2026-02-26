@@ -5,6 +5,8 @@ services:
     restart: always
     networks:
       - traefik_proxy
+    env_file:
+      - .env
     environment:
       - DATA_DIR=/app/.data
     volumes:

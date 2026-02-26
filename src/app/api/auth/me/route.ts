@@ -20,7 +20,12 @@ export async function GET() {
     // Regular user - get profile
     try {
         const profile = getProfile(userId);
-        return NextResponse.json({ userId, isGuest: false, displayName: profile?.displayName || profile?.username });
+        return NextResponse.json({ 
+            userId, 
+            isGuest: false, 
+            displayName: profile?.displayName || profile?.username,
+            isAdmin: profile?.isAdmin || false
+        });
     } catch {
         return new NextResponse(null, { status: 401 });
     }

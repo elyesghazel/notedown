@@ -4,8 +4,9 @@ import fs from "fs";
 import path from "path";
 
 import { getUserId } from "@/lib/auth";
-import { getUploads, saveUploads } from "@/lib/db";
+import { getUploads, saveUploads, getUsers } from "@/lib/db";
 import { UploadedFile } from "@/lib/types";
+import { checkStorageLimit } from "@/lib/storage";
 
 export async function POST(req: Request) {
     const userId = await getUserId();
@@ -21,6 +22,17 @@ export async function POST(req: Request) {
         }
 
         console.log(`[UPLOAD] Received file: ${file.name} (${file.size} bytes, type: ${file.type})`);
+
+        // Check storage limit
+        const users = getUsers();
+        const user = users.find((u) => u.id === userId);
+        const fileSizeMB = file.size / (1024 * 1024);
+        
+        const storageCheck = checkStorageLimit(userId, user?.storageCapMB, fileSizeMB);
+        
+        if (!storageCheck.allowed) {
+            return new NextResponse(storageCheck.message || "Storage limit exceeded", { status: 413 });
+        }
 
         const buffer = Buffer.from(await file.arrayBuffer());
         console.log(`[UPLOAD] Buffer created: ${buffer.length} bytes`);

@@ -244,4 +244,18 @@ export const api = {
             headers: { "Content-Type": "application/json" },
         }).then((r) => r.json()),
     deleteTemplate: (id: string) => fetch(`/api/templates/${id}`, { method: "DELETE", credentials: "include" }),
+
+    // Generic helpers
+    get: <T = any>(url: string): Promise<T> => fetch(url, { credentials: "include" }).then((r) => r.json()),
+    patch: <T = any>(url: string, data: any): Promise<T> =>
+        fetch(url, {
+            method: "PATCH",
+            credentials: "include",
+            body: JSON.stringify(data),
+            headers: { "Content-Type": "application/json" },
+        }).then((r) => r.json()),
+    del: (url: string) => fetch(url, { method: "DELETE", credentials: "include" }),
+    
+    // Auth
+    getMe: () => fetch("/api/auth/me", { credentials: "include" }).then((r) => r.json()),
 };

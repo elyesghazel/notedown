@@ -5,6 +5,8 @@ export interface User {
     displayName?: string;
     createdAt: string;
     webdav?: WebDavConfig;
+    isAdmin?: boolean;
+    storageCapMB?: number; // Default: 150MB
 }
 
 export interface WebDavConfig {
