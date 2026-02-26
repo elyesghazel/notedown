@@ -1,11 +1,13 @@
 import { cookies } from "next/headers";
 import { jwtVerify, SignJWT } from "jose";
 
-const JWT_SECRET = process.env.JWT_SECRET || "super-secret-key-change-in-prod";
-if (process.env.NODE_ENV === "production" && JWT_SECRET === "super-secret-key-change-in-prod") {
-    throw new Error("JWT_SECRET must be set in production environment");
+function getSecret() {
+    const jwtSecret = process.env.JWT_SECRET || "super-secret-key-change-in-prod";
+    if (process.env.NODE_ENV === "production" && jwtSecret === "super-secret-key-change-in-prod") {
+        throw new Error("JWT_SECRET must be set in production environment");
+    }
+    return new TextEncoder().encode(jwtSecret);
 }
-const SECRET = new TextEncoder().encode(JWT_SECRET);
 
 export async function getUserId(): Promise<string | null> {
     try {
@@ -14,7 +16,7 @@ export async function getUserId(): Promise<string | null> {
         // Check for regular auth token first
         const token = cookieStore.get("auth-token")?.value;
         if (token) {
-            const { payload } = await jwtVerify(token, SECRET);
+            const { payload } = await jwtVerify(token, getSecret());
             return payload.sub as string;
         }
 
@@ -40,5 +42,5 @@ export async function createToken(userId: string): Promise<string> {
         .setSubject(userId)
         .setIssuedAt()
         .setExpirationTime("30d")
-        .sign(SECRET);
+        .sign(getSecret());
 }
