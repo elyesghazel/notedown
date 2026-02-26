@@ -120,7 +120,7 @@ export default function AdminPage() {
     };
 
     return (
-        <div className="min-h-screen bg-background">
+        <div className="flex-1 overflow-y-auto bg-background">
             <div className="max-w-6xl mx-auto p-8">
                 <h1 className="text-3xl font-bold mb-2">Admin Panel</h1>
                 <p className="text-muted-foreground mb-8">Manage users and invite codes</p>
