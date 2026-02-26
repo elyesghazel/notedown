@@ -12,7 +12,10 @@ export async function GET() {
     const user = users.find((u) => u.id === userId);
     if (!user) return new NextResponse("Not found", { status: 404 });
 
-    return NextResponse.json(user.webdav || { enabled: false, url: "", username: "", password: "", basePath: "/", preferPdf: false });
+    // Never expose password in GET response
+    const config = user.webdav || { enabled: false, url: "", username: "", password: "", basePath: "/", preferPdf: false };
+    const { password, ...safeConfig } = config;
+    return NextResponse.json({ ...safeConfig, hasPassword: !!password });
 }
 
 export async function PATCH(req: Request) {

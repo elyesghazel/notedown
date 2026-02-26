@@ -3,8 +3,21 @@ import { getUsers } from "@/lib/db";
 import bcrypt from "bcryptjs";
 import { createToken } from "@/lib/auth";
 import { cookies } from "next/headers";
+import { checkRateLimit, getClientIp } from "@/lib/ratelimit";
 
 export async function POST(req: Request) {
+    // Rate limit: 5 attempts per 15 minutes per IP
+    const clientIp = getClientIp(req);
+    const rateLimitResponse = checkRateLimit(clientIp, {
+        windowMs: 15 * 60 * 1000,
+        maxRequests: 5,
+        keyPrefix: "login"
+    });
+    
+    if (rateLimitResponse) {
+        return rateLimitResponse;
+    }
+
     try {
         const { username, password } = await req.json();
 
@@ -26,7 +39,8 @@ export async function POST(req: Request) {
             value: token,
             httpOnly: true,
             path: "/",
-            secure: false, // Allow http for local development and docker-compose without SSL
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "strict", // CSRF protection
             maxAge: 30 * 24 * 60 * 60,
         });
 

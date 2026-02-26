@@ -1,7 +1,11 @@
 import { cookies } from "next/headers";
 import { jwtVerify, SignJWT } from "jose";
 
-const SECRET = new TextEncoder().encode("super-secret-key-change-in-prod");
+const JWT_SECRET = process.env.JWT_SECRET || "super-secret-key-change-in-prod";
+if (process.env.NODE_ENV === "production" && JWT_SECRET === "super-secret-key-change-in-prod") {
+    throw new Error("JWT_SECRET must be set in production environment");
+}
+const SECRET = new TextEncoder().encode(JWT_SECRET);
 
 export async function getUserId(): Promise<string | null> {
     try {

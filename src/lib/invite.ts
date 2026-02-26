@@ -15,8 +15,8 @@ export function generateInviteCode(): string {
     hmac.update(window.toString());
     const hash = hmac.digest("hex");
     
-    // Take first 8 characters for a clean code
-    return hash.substring(0, 8).toUpperCase();
+    // Use 12 characters for better entropy (16^12 vs 16^8)
+    return hash.substring(0, 12).toUpperCase();
 }
 
 /**

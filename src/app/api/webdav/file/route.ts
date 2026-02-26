@@ -24,8 +24,12 @@ export async function GET(req: Request) {
     const download = searchParams.get("download") === "1";
     if (!path) return new NextResponse("Missing path", { status: 400 });
 
+    // Security: Normalize and validate path
+    const normalizedPath = path.replace(/\\/g, '/').replace(/\/+/g, '/');
     const basePath = normalizeBasePath(user.webdav.basePath);
-    if (!path.startsWith(basePath)) {
+    
+    // Prevent path traversal
+    if (normalizedPath.includes("..") || !normalizedPath.startsWith(basePath)) {
         return new NextResponse("Invalid path", { status: 403 });
     }
 

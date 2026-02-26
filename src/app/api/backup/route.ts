@@ -31,7 +31,9 @@ export async function GET() {
     const presets = getPdfPresets(userId);
 
     const docIds = new Set(documents.map((d) => d.id));
-    const published = getPublished().filter((p) => docIds.has(p.docId));
+    const published = getPublished()
+        .filter((p) => docIds.has(p.docId))
+        .map(({ editPassword, ...safe }) => safe); // Remove password hashes
 
     const payload = {
         version: 1,

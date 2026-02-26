@@ -1,6 +1,6 @@
 import { getUserId } from "@/lib/auth";
 import { NextResponse } from "next/server";
-import { getFolders, saveFolders, getDocuments, saveDocuments } from "@/lib/db";
+import { getFolders, saveFolders, getDocuments, saveDocuments, getSpaces } from "@/lib/db";
 import { slugify } from "@/lib/slugify";
 import { Folder, Document } from "@/lib/types";
 
@@ -21,10 +21,21 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     }
 
     if (body.parentFolderId !== undefined || body.parentFolderId === null) {
+        // Validate parent folder ownership  
+        if (body.parentFolderId !== null) {
+            if (!folders.find(f => f.id === body.parentFolderId)) {
+                return new NextResponse("Invalid parentFolderId", { status: 403 });
+            }
+        }
         folders[idx].parentFolderId = body.parentFolderId;
     }
 
     if (body.spaceId !== undefined && body.spaceId !== folders[idx].spaceId) {
+        // Validate space ownership
+        const spaces = getSpaces(userId);
+        if (!spaces.find(s => s.id === body.spaceId)) {
+            return new NextResponse("Invalid spaceId", { status: 403 });
+        }
         const newSpaceId = body.spaceId;
         folders[idx].spaceId = newSpaceId;
 
