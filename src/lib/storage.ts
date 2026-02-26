@@ -2,7 +2,7 @@ import fs from "fs";
 import path from "path";
 import { getUploads } from "./db";
 
-const DEFAULT_CAP_MB = 150;
+const DEFAULT_CAP_MB = parseInt(process.env.DEFAULT_STORAGE_CAP_MB || "150", 10);
 
 /**
  * Calculate total storage used by a user (uploads folder only).

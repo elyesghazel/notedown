@@ -7,7 +7,8 @@ interface RateLimitEntry {
 
 const rateLimitStore = new Map<string, RateLimitEntry>();
 
-// Clean up expired entries every 10 minutes
+// Clean up expired entries at configurable interval (default: 10 minutes)
+const cleanupIntervalMs = parseInt(process.env.RATELIMIT_CLEANUP_INTERVAL_MS || "600000", 10);
 setInterval(() => {
     const now = Date.now();
     for (const [key, entry] of rateLimitStore.entries()) {
@@ -15,7 +16,7 @@ setInterval(() => {
             rateLimitStore.delete(key);
         }
     }
-}, 10 * 60 * 1000);
+}, cleanupIntervalMs);
 
 export interface RateLimitConfig {
     windowMs: number;  // Time window in milliseconds

@@ -10,8 +10,8 @@ export async function POST(req: Request) {
     // Rate limit: 3 attempts per 15 minutes per IP
     const clientIp = getClientIp(req);
     const rateLimitResponse = checkRateLimit(clientIp, {
-        windowMs: 15 * 60 * 1000,
-        maxRequests: 3,
+        windowMs: parseInt(process.env.RATELIMIT_REGISTER_WINDOW_MS || "900000", 10),
+        maxRequests: parseInt(process.env.RATELIMIT_REGISTER_MAX_REQUESTS || "3", 10),
         keyPrefix: "register"
     });
     
@@ -49,7 +49,7 @@ export async function POST(req: Request) {
             displayName: username,
             createdAt: new Date().toISOString(),
             isAdmin: isFirstUser && !hasExistingAdmin,
-            storageCapMB: 150 // Default cap
+            storageCapMB: parseInt(process.env.DEFAULT_STORAGE_CAP_MB || "150", 10)
         };
 
         saveUsers([...users, newUser]);

@@ -9,8 +9,8 @@ export async function POST(req: Request) {
     // Rate limit: 5 attempts per 15 minutes per IP
     const clientIp = getClientIp(req);
     const rateLimitResponse = checkRateLimit(clientIp, {
-        windowMs: 15 * 60 * 1000,
-        maxRequests: 5,
+        windowMs: parseInt(process.env.RATELIMIT_LOGIN_WINDOW_MS || "900000", 10),
+        maxRequests: parseInt(process.env.RATELIMIT_LOGIN_MAX_REQUESTS || "5", 10),
         keyPrefix: "login"
     });
     

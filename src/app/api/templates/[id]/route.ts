@@ -2,7 +2,7 @@ import { NextResponse, NextRequest } from "next/server";
 import { getUserId } from "@/lib/auth";
 import { getTemplates, saveTemplates } from "@/lib/db";
 
-const MAX_CONTENT_LENGTH = 50000;
+const MAX_CONTENT_LENGTH = parseInt(process.env.MAX_TEMPLATE_CONTENT_LENGTH || "50000", 10);
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     const userId = await getUserId();

@@ -1,10 +1,10 @@
-import { NextResponse } from "next/server";
+import { NextResponse, NextRequest } from "next/server";
 import { getUserId } from "@/lib/auth";
 import { getTemplates, saveTemplates } from "@/lib/db";
 import { MarkdownTemplate } from "@/lib/types";
 import { v4 as uuidv4 } from "uuid";
 
-const MAX_CONTENT_LENGTH = 50000;
+const MAX_CONTENT_LENGTH = parseInt(process.env.MAX_TEMPLATE_CONTENT_LENGTH || "50000", 10);
 
 export async function GET() {
     const userId = await getUserId();
@@ -13,7 +13,7 @@ export async function GET() {
     return NextResponse.json(getTemplates(userId));
 }
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
     const userId = await getUserId();
     if (!userId) return new NextResponse("Unauthorized", { status: 401 });
 

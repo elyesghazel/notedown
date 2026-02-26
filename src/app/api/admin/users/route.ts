@@ -21,7 +21,7 @@ export async function GET() {
         displayName: u.displayName,
         createdAt: u.createdAt,
         isAdmin: u.isAdmin || false,
-        storageCapMB: u.storageCapMB || 150,
+        storageCapMB: u.storageCapMB || parseInt(process.env.DEFAULT_STORAGE_CAP_MB || "150", 10),
         storageUsedMB: calculateUserStorage(u.id)
     }));
 

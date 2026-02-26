@@ -9,8 +9,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ uui
     // Rate limit: 10 edits per 5 minutes per IP per document
     const clientIp = getClientIp(req);
     const rateLimitResponse = checkRateLimit(`${clientIp}:${uuid}`, {
-        windowMs: 5 * 60 * 1000,
-        maxRequests: 10,
+        windowMs: parseInt(process.env.RATELIMIT_PUBLISH_WINDOW_MS || "300000", 10),
+        maxRequests: parseInt(process.env.RATELIMIT_PUBLISH_MAX_REQUESTS || "10", 10),
         keyPrefix: "publish-edit"
     });
     
