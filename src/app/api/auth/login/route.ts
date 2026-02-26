@@ -34,14 +34,18 @@ export async function POST(req: Request) {
             user: { id: user.id, username: user.username, displayName: user.displayName || user.username }
         });
 
+        const sameSite = (process.env.COOKIE_SAME_SITE as "strict" | "lax" | "none") || "lax";
+        const secure = process.env.NODE_ENV === "production" || process.env.FORCE_SECURE_COOKIE === "true";
+
         res.cookies.set({
             name: "auth-token",
             value: token,
             httpOnly: true,
             path: "/",
-            secure: process.env.NODE_ENV === "production",
-            sameSite: "strict", // CSRF protection
+            secure,
+            sameSite, // CSRF protection
             maxAge: 30 * 24 * 60 * 60,
+            domain: process.env.COOKIE_DOMAIN || undefined,
         });
 
         return res;
