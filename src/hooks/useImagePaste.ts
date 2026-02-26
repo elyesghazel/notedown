@@ -2,14 +2,16 @@ import { api } from "@/lib/api-client";
 
 export function useImagePaste(insertTextAtCursor: (text: string) => void) {
     const handleFileUpload = async (file: File) => {
-        if (!file.type.startsWith("image/")) return;
+        const isImage = file.type.startsWith("image/");
+        const isPdf = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
+        if (!isImage && !isPdf) return;
         try {
             // First we need to grab the cursor position and insert a loading state. 
             // the insert function takes care of this
             const originalLength = `![Uploading ${file.name}...]()`.length;
             insertTextAtCursor(`![Uploading ${file.name}...]()`);
 
-            const { url } = await api.uploadImage(file);
+            const { url } = await api.uploadFile(file);
             // We can't easily find and replace the generic loading text without a full editor state manager.
             // For this lightweight textarea, we will just insert the correct one and rely on user to delete the loading one if desired, 
             // OR we can just omit the loading state and insert it when done.
@@ -20,15 +22,22 @@ export function useImagePaste(insertTextAtCursor: (text: string) => void) {
     };
 
     const processFile = async (file: File) => {
-        if (!file.type.startsWith("image/")) return;
+        const isImage = file.type.startsWith("image/");
+        const isPdf = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
+        if (!isImage && !isPdf) return;
         try {
-            console.log(`[IMAGE_PASTE] Uploading image: ${file.name} (${file.size} bytes)`);
-            const response = await api.uploadImage(file);
-            // Extract filename from URL and use API route
-            const filename = response.url.split('/').pop();
-            const imageUrl = `/api/uploads/${filename}`;
-            console.log(`[IMAGE_PASTE] Upload successful: ${imageUrl}`);
-            insertTextAtCursor(`![image](${imageUrl})`);
+            const tag = isImage ? "IMAGE" : "PDF";
+            console.log(`[${tag}_PASTE] Uploading: ${file.name} (${file.size} bytes)`);
+            const response = isPdf ? await api.uploadPdf(file) : await api.uploadFile(file);
+            const fileUrl = response.url.startsWith("/uploads/")
+                ? `/api/uploads/${response.url.split('/').pop()}`
+                : response.url;
+            console.log(`[${tag}_PASTE] Upload successful: ${fileUrl}`);
+            if (isImage) {
+                insertTextAtCursor(`![image](${fileUrl})`);
+            } else {
+                insertTextAtCursor(`[${file.name}](${fileUrl})`);
+            }
         } catch (e: any) {
             const errorMsg = e?.message || String(e);
             console.error("[IMAGE_PASTE] Failed to upload image:", errorMsg);

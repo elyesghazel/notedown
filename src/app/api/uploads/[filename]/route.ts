@@ -7,6 +7,8 @@ export async function GET(
   { params }: { params: Promise<{ filename: string }> }
 ) {
   const { filename } = await params;
+  const url = new URL(req.url);
+  const download = url.searchParams.get("download") === "1";
 
   // Security: prevent directory traversal
   if (filename.includes("..") || filename.includes("/")) {
@@ -15,7 +17,7 @@ export async function GET(
   }
 
   const filepath = path.join(process.cwd(), "public", "uploads", filename);
-  console.log(`[API_UPLOADS] GET ${filename} -> ${filepath}`);
+  console.log(`[API_UPLOADS] GET ${filename} -> ${filepath} (download=${download})`);
 
   if (!fs.existsSync(filepath)) {
     console.error(`[API_UPLOADS] File not found: ${filepath}`);
@@ -32,15 +34,22 @@ export async function GET(
       ".png": "image/png",
       ".gif": "image/gif",
       ".webp": "image/webp",
+      ".pdf": "application/pdf",
     };
 
     const contentType = mimeTypes[ext] || "application/octet-stream";
+    const contentDisposition = download
+      ? `attachment; filename="${filename}"`
+      : ext === ".pdf"
+      ? `inline; filename="${filename}"`
+      : undefined;
     console.log(`[API_UPLOADS] Serving ${filename} (${buffer.length} bytes, type: ${contentType})`);
 
     return new NextResponse(buffer, {
       headers: { 
         "Content-Type": contentType,
-        "Cache-Control": "public, max-age=31536000, immutable"
+        "Cache-Control": "public, max-age=31536000, immutable",
+        ...(contentDisposition ? { "Content-Disposition": contentDisposition } : {}),
       },
     });
   } catch (err: any) {

@@ -4,6 +4,8 @@ import fs from "fs";
 import path from "path";
 
 import { getUserId } from "@/lib/auth";
+import { getUploads, saveUploads } from "@/lib/db";
+import { UploadedFile } from "@/lib/types";
 
 export async function POST(req: Request) {
     const userId = await getUserId();
@@ -50,7 +52,23 @@ export async function POST(req: Request) {
             console.error(`[UPLOAD] File exists check failed!`);
         }
 
-        return NextResponse.json({ url: `/uploads/${filename}` });
+        const url = `/uploads/${filename}`;
+
+        const uploads = getUploads(userId);
+        const record: UploadedFile = {
+            id: uuidv4(),
+            filename,
+            url,
+            originalName: file.name,
+            mimeType: file.type || "application/octet-stream",
+            size: file.size,
+            createdAt: new Date().toISOString(),
+            source: "local",
+        };
+        uploads.push(record);
+        saveUploads(userId, uploads);
+
+        return NextResponse.json({ url });
     } catch (err: any) {
         console.error("[UPLOAD] Error:", err.message, err.stack);
         return NextResponse.json(

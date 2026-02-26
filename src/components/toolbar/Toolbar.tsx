@@ -3,7 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Eye, FileEdit, Share, Download, Bold, Italic, Strikethrough, Code, Link2, List, ListOrdered, Quote, CheckSquare, ImagePlus, Type } from "lucide-react";
+import { Eye, FileEdit, Share, Download, Bold, Italic, Strikethrough, Code, Link2, List, ListOrdered, Quote, CheckSquare, ImagePlus, Type, Table, FileText } from "lucide-react";
 import { Document } from "@/lib/types";
 import { useState } from "react";
 import { PublishDialog } from "../dialogs/PublishDialog";
@@ -29,6 +29,10 @@ export function Toolbar({ doc, mode, setMode, isSaving, isMobile = false }: Tool
 
     const emitPickImage = () => {
         window.dispatchEvent(new CustomEvent("editor:pick-image"));
+    };
+
+    const emitPickPdf = () => {
+        window.dispatchEvent(new CustomEvent("editor:pick-pdf"));
     };
 
     if (isMobile) {
@@ -105,8 +109,14 @@ export function Toolbar({ doc, mode, setMode, isSaving, isMobile = false }: Tool
                                 <DropdownMenuItem onClick={() => emitFormat("task")}>
                                     <CheckSquare className="w-4 h-4 mr-2" /> Task List
                                 </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => emitFormat("table")}> 
+                                    <Table className="w-4 h-4 mr-2" /> Table
+                                </DropdownMenuItem>
                                 <DropdownMenuItem onClick={emitPickImage}>
                                     <ImagePlus className="w-4 h-4 mr-2" /> Insert Image
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={emitPickPdf}>
+                                    <FileText className="w-4 h-4 mr-2" /> Insert PDF
                                 </DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>
@@ -246,11 +256,27 @@ export function Toolbar({ doc, mode, setMode, isSaving, isMobile = false }: Tool
                     </Tooltip>
                     <Tooltip>
                         <TooltipTrigger asChild>
+                            <Button variant="ghost" size="sm" className="h-8 px-2" onClick={() => emitFormat("table")}>
+                                <Table className="w-4 h-4" />
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Table</TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
                             <Button variant="ghost" size="sm" className="h-8 px-2" onClick={emitPickImage}>
                                 <ImagePlus className="w-4 h-4" />
                             </Button>
                         </TooltipTrigger>
                         <TooltipContent>Insert Image</TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button variant="ghost" size="sm" className="h-8 px-2" onClick={emitPickPdf}>
+                                <FileText className="w-4 h-4" />
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Insert PDF</TooltipContent>
                     </Tooltip>
                 </div>
 

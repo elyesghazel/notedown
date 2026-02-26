@@ -66,6 +66,16 @@ export async function POST(req: Request) {
                         display: block;
                         margin: 1em 0;
                     }
+                    .prose pre,
+                    .prose code {
+                        white-space: pre-wrap !important;
+                        word-break: break-word !important;
+                        overflow-wrap: anywhere !important;
+                        max-width: 100% !important;
+                    }
+                    .prose pre {
+                        overflow: hidden !important;
+                    }
                     @media print {
                         .prose {
                             color: black !important;
@@ -108,6 +118,16 @@ export async function POST(req: Request) {
 
         await page.setContent(fullHtml, { waitUntil: 'networkidle0' });
         await page.evaluateHandle('document.fonts.ready');
+        await page.evaluate(async () => {
+            const images = Array.from(document.images);
+            await Promise.all(images.map((img) => {
+                if (img.complete) return Promise.resolve();
+                return new Promise<void>((resolve) => {
+                    img.onload = () => resolve();
+                    img.onerror = () => resolve();
+                });
+            }));
+        });
 
         // Build header/footer HTML
         const buildHeaderFooterHTML = (items: any[]) => {

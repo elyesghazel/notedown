@@ -6,7 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { Loader2, Settings, Download, Upload, AlertCircle } from "lucide-react";
+import { Loader2, Settings, Download, Upload, AlertCircle, Plug } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { WebDavConfig } from "@/lib/types";
 
 interface UserInfo {
     userId: string;
@@ -28,6 +30,18 @@ export default function SettingsPage() {
     const [importFile, setImportFile] = useState<File | null>(null);
     const [importing, setImporting] = useState(false);
     const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
+    const [webdavConfig, setWebdavConfig] = useState<WebDavConfig>({
+        enabled: false,
+        url: "",
+        username: "",
+        password: "",
+        basePath: "/",
+        preferPdf: false,
+    });
+    const [webdavLoading, setWebdavLoading] = useState(true);
+    const [webdavSaving, setWebdavSaving] = useState(false);
+    const [webdavTesting, setWebdavTesting] = useState(false);
+    const [webdavMessage, setWebdavMessage] = useState<string | null>(null);
 
     useEffect(() => {
         let active = true;
@@ -56,6 +70,27 @@ export default function SettingsPage() {
             .finally(() => {
                 if (!active) return;
                 setLoadingProfile(false);
+            });
+
+        api.getWebdavConfig()
+            .then((config) => {
+                if (!active) return;
+                setWebdavConfig({
+                    enabled: !!config.enabled,
+                    url: config.url || "",
+                    username: config.username || "",
+                    password: config.password || "",
+                    basePath: config.basePath || "/",
+                    preferPdf: !!config.preferPdf,
+                });
+            })
+            .catch(() => {
+                if (!active) return;
+                setWebdavMessage("Failed to load WebDAV settings.");
+            })
+            .finally(() => {
+                if (!active) return;
+                setWebdavLoading(false);
             });
         return () => {
             active = false;
@@ -131,6 +166,44 @@ export default function SettingsPage() {
             setBackupMessage("Failed to import backup file.");
         } finally {
             setImporting(false);
+        }
+    };
+
+    const handleWebdavSave = async () => {
+        setWebdavSaving(true);
+        setWebdavMessage(null);
+        try {
+            const saved = await api.saveWebdavConfig(webdavConfig);
+            setWebdavConfig({
+                enabled: !!saved.enabled,
+                url: saved.url || "",
+                username: saved.username || "",
+                password: saved.password || "",
+                basePath: saved.basePath || "/",
+                preferPdf: !!saved.preferPdf,
+            });
+            setWebdavMessage("WebDAV settings saved.");
+        } catch {
+            setWebdavMessage("Failed to save WebDAV settings.");
+        } finally {
+            setWebdavSaving(false);
+        }
+    };
+
+    const handleWebdavTest = async () => {
+        setWebdavTesting(true);
+        setWebdavMessage(null);
+        try {
+            const result = await api.testWebdavConfig(webdavConfig);
+            if (result.ok) {
+                setWebdavMessage("WebDAV connection OK.");
+            } else {
+                setWebdavMessage(result.error || "WebDAV test failed.");
+            }
+        } catch {
+            setWebdavMessage("WebDAV test failed.");
+        } finally {
+            setWebdavTesting(false);
         }
     };
 
@@ -251,6 +324,82 @@ export default function SettingsPage() {
                                         <div className="text-sm text-muted-foreground">{backupMessage}</div>
                                     )}
                                 </div>
+                            </section>
+
+                            <section className="bg-card border rounded-xl p-6 shadow-sm">
+                                <div className="flex items-center gap-2 mb-4">
+                                    <Plug className="w-4 h-4 text-muted-foreground" />
+                                    <h2 className="text-lg font-semibold">WebDAV</h2>
+                                </div>
+                                {webdavLoading ? (
+                                    <div className="flex items-center text-muted-foreground text-sm">
+                                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                        Loading WebDAV settings...
+                                    </div>
+                                ) : (
+                                    <div className="space-y-4">
+                                        <div className="flex items-center gap-2">
+                                            <Checkbox
+                                                checked={webdavConfig.enabled}
+                                                onCheckedChange={(val) => setWebdavConfig((prev) => ({ ...prev, enabled: !!val }))}
+                                            />
+                                            <Label>Enable WebDAV integration</Label>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label>Server URL</Label>
+                                            <Input
+                                                value={webdavConfig.url}
+                                                onChange={(e) => setWebdavConfig((prev) => ({ ...prev, url: e.target.value }))}
+                                                placeholder="https://webdav.example.com/remote.php/dav/files/user"
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label>Base Path</Label>
+                                            <Input
+                                                value={webdavConfig.basePath || "/"}
+                                                onChange={(e) => setWebdavConfig((prev) => ({ ...prev, basePath: e.target.value }))}
+                                                placeholder="/Notedown"
+                                            />
+                                        </div>
+                                        <div className="grid gap-4 sm:grid-cols-2">
+                                            <div className="space-y-2">
+                                                <Label>Username</Label>
+                                                <Input
+                                                    value={webdavConfig.username}
+                                                    onChange={(e) => setWebdavConfig((prev) => ({ ...prev, username: e.target.value }))}
+                                                />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label>Password</Label>
+                                                <Input
+                                                    type="password"
+                                                    value={webdavConfig.password}
+                                                    onChange={(e) => setWebdavConfig((prev) => ({ ...prev, password: e.target.value }))}
+                                                />
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <Checkbox
+                                                checked={webdavConfig.preferPdf}
+                                                onCheckedChange={(val) => setWebdavConfig((prev) => ({ ...prev, preferPdf: !!val }))}
+                                            />
+                                            <Label>Store PDFs in WebDAV</Label>
+                                        </div>
+                                        <div className="flex flex-wrap gap-2">
+                                            <Button variant="outline" onClick={handleWebdavTest} disabled={webdavTesting}>
+                                                {webdavTesting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                                                Test Connection
+                                            </Button>
+                                            <Button onClick={handleWebdavSave} disabled={webdavSaving}>
+                                                {webdavSaving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                                                Save WebDAV
+                                            </Button>
+                                        </div>
+                                        {webdavMessage && (
+                                            <div className="text-sm text-muted-foreground">{webdavMessage}</div>
+                                        )}
+                                    </div>
+                                )}
                             </section>
                         </>
                     )}

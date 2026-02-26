@@ -1,4 +1,4 @@
-import { Workspace, Space, Folder, Document, PublishedDoc, PDFPreset } from "./types";
+import { Workspace, Space, Folder, Document, PublishedDoc, PDFPreset, UploadedFile, WebDavConfig, MarkdownTemplate } from "./types";
 
 export interface PublishedSummary {
     docId: string;
@@ -122,6 +122,44 @@ export const api = {
             });
     },
 
+    uploadFile: (file: File): Promise<{ url: string }> => {
+        const form = new FormData();
+        form.append("file", file);
+        return fetch("/api/upload", { method: "POST", credentials: "include", body: form })
+            .then((r) => {
+                if (!r.ok) {
+                    return r.json().then((data) => {
+                        throw new Error(data.error || `Upload failed with status ${r.status}`);
+                    });
+                }
+                return r.json();
+            });
+    },
+
+    uploadPdf: (file: File): Promise<{ url: string }> => {
+        const form = new FormData();
+        form.append("file", file);
+        return fetch("/api/upload/pdf", { method: "POST", credentials: "include", body: form })
+            .then((r) => {
+                if (!r.ok) {
+                    return r.json().then((data) => {
+                        throw new Error(data.error || `Upload failed with status ${r.status}`);
+                    });
+                }
+                return r.json();
+            });
+    },
+
+    // Uploads
+    getUploads: (type?: "pdf", query?: string): Promise<UploadedFile[]> => {
+        const params = new URLSearchParams();
+        if (type) params.set("type", type);
+        if (query) params.set("q", query);
+        const qs = params.toString();
+        const url = qs ? `/api/uploads?${qs}` : "/api/uploads";
+        return fetch(url, { credentials: "include" }).then((r) => r.json());
+    },
+
     // Publish
     publishDoc: (docId: string, editable?: boolean, editPassword?: string): Promise<{ uuid: string }> =>
         fetch("/api/publish", {
@@ -154,6 +192,23 @@ export const api = {
             headers: { "Content-Type": "application/json" },
         }).then((r) => r.json()),
 
+    getWebdavConfig: (): Promise<WebDavConfig> =>
+        fetch("/api/settings/webdav", { credentials: "include" }).then((r) => r.json()),
+    saveWebdavConfig: (config: WebDavConfig): Promise<WebDavConfig> =>
+        fetch("/api/settings/webdav", {
+            method: "PATCH",
+            credentials: "include",
+            body: JSON.stringify(config),
+            headers: { "Content-Type": "application/json" },
+        }).then((r) => r.json()),
+    testWebdavConfig: (config: WebDavConfig): Promise<{ ok: boolean; error?: string }> =>
+        fetch("/api/settings/webdav", {
+            method: "POST",
+            credentials: "include",
+            body: JSON.stringify(config),
+            headers: { "Content-Type": "application/json" },
+        }).then((r) => r.json()),
+
     // PDF presets
     getPdfPresets: (): Promise<PDFPreset[]> => fetch("/api/pdf-presets", { credentials: "include" }).then((r) => r.json()),
     createPdfPreset: (name: string, header: PDFPreset["header"], footer: PDFPreset["footer"]): Promise<PDFPreset> =>
@@ -171,4 +226,22 @@ export const api = {
             headers: { "Content-Type": "application/json" },
         }).then((r) => r.json()),
     deletePdfPreset: (id: string) => fetch(`/api/pdf-presets/${id}`, { method: "DELETE", credentials: "include" }),
+
+    // Templates
+    getTemplates: (): Promise<MarkdownTemplate[]> => fetch("/api/templates", { credentials: "include" }).then((r) => r.json()),
+    createTemplate: (name: string, content: string): Promise<MarkdownTemplate> =>
+        fetch("/api/templates", {
+            method: "POST",
+            credentials: "include",
+            body: JSON.stringify({ name, content }),
+            headers: { "Content-Type": "application/json" },
+        }).then((r) => r.json()),
+    updateTemplate: (id: string, data: Partial<Pick<MarkdownTemplate, "name" | "content">>): Promise<MarkdownTemplate> =>
+        fetch(`/api/templates/${id}`, {
+            method: "PATCH",
+            credentials: "include",
+            body: JSON.stringify(data),
+            headers: { "Content-Type": "application/json" },
+        }).then((r) => r.json()),
+    deleteTemplate: (id: string) => fetch(`/api/templates/${id}`, { method: "DELETE", credentials: "include" }),
 };

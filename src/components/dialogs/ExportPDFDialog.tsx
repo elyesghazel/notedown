@@ -204,6 +204,23 @@ export function ExportPDFDialog({ open, onOpenChange, documentName = "document" 
             const element = document.querySelector(".prose") as HTMLElement;
             if (!element) throw new Error("Preview not found — switch to Split or Preview mode first");
 
+            const prepareItems = async (items: HeaderFooterContent[]) => {
+                const prepared = await Promise.all(items.map(async (item) => {
+                    if (item.type !== "logo" || !item.value) return item;
+                    try {
+                        const { dataUrl, width, height } = await loadImageData(item.value);
+                        updateLogoMeta(item.value, width, height);
+                        return { ...item, value: dataUrl };
+                    } catch {
+                        return item;
+                    }
+                }));
+                return prepared;
+            };
+
+            const preparedHeader = await prepareItems(headerItems);
+            const preparedFooter = await prepareItems(footerItems);
+
             const response = await fetch("/api/export/pdf", {
                 method: "POST",
                 headers: {
@@ -211,8 +228,8 @@ export function ExportPDFDialog({ open, onOpenChange, documentName = "document" 
                 },
                 body: JSON.stringify({
                     html: element.innerHTML,
-                    header: headerItems,
-                    footer: footerItems,
+                    header: preparedHeader,
+                    footer: preparedFooter,
                 }),
             });
 

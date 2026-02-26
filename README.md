@@ -1,36 +1,49 @@
 # Notedown
 
-A powerful, high-performance Markdown Note-Taking Platform designed for speed, organization, and a premium editing experience.
+A powerful, high-performance Markdown note-taking platform designed for speed, organization, and a premium editing experience.
 
 ![Notedown Interface](https://via.placeholder.com/800x400?text=Notedown+Markdown+Editor)
 
 ## ✨ Core Features
 
 ### 🚀 Advanced Editing & Preview
-- **Interactive Image Resizing**: Hover over an image in the preview pane and drag the blue handle to resize. Your Markdown code updates automatically!
+- **Interactive Image Resizing**: Hover over an image in the preview pane and drag the blue handle to resize. Your Markdown code updates automatically.
 - **Dual-Pane Interface**: Edit in real-time with GFM (GitHub Flavored Markdown) support.
 - **Image Paste & Drag-and-Drop**: Paste images directly into the editor for instant upload and embedding.
-- **Formatting Toolbar**: Bold, italic, lists, quotes, links, and task lists at a click.
+- **Formatting Toolbar**: Bold, italic, lists, quotes, links, task lists, and table insert at a click.
 - **Auto-Pair Markdown**: Auto-closes pairs like ** and __ while typing for faster formatting.
 - **Camera/Image Insert**: Snap a photo or pick an image and insert it as Markdown.
 - **Find in File (Ctrl+F)**: Search for text within the current document with a sleek, distraction-free widget.
 
+### 📄 PDF Workflow
+- **PDF Upload & Embed**: Upload PDFs and embed them inline in notes.
+- **PDF Preview Controls**: Resize the viewer and toggle a quick preview panel.
+- **Smart Download**: Downloads preserve the correct `.pdf` extension.
+- **PDF Export**: High-quality PDF generation powered by Puppeteer with long code blocks wrapped correctly.
+
 ### 🔍 Search & Quick Actions
-- **Global Full-Text Search (Ctrl+K)**: Search through file names AND file contents across all your workspaces, complete with context snippets.
-- **Power Command Palette (Ctrl+Shift+P)**: Access system actions like "Quick Note", "Home", and "Sign Out" instantly.
+- **Global Full-Text Search (Ctrl+K)**: Search file names and contents across all workspaces with context snippets.
+- **Power Command Palette (Ctrl+Shift+P)**: Access actions like "Quick Note", "Home", and "Sign Out" instantly.
 - **Quick Capture**: A dedicated button to jot down timestamped notes instantly in your private Inbox.
+- **PDF Search**: PDFs are indexed alongside notes for quick discovery.
 
 ### 📁 Structure & Organization
 - **Multi-Level Hierarchy**: Workspaces > Spaces > Folders > Documents.
 - **Intuitive Sidebar**: Drag-and-drop hierarchy with right-click context menus for all file operations (Rename, Delete, New Folder, New Doc).
-- **Public Publishing**: Publish your notes to a unique, shareable URL with one click.
-- **PDF Export**: High-quality PDF generation powered by Puppeteer.
+- **Persistent Folder State**: Keeps your expanded folders open as you work.
+- **Public Publishing**: Publish notes to a unique, shareable URL with one click.
+- **Published Manager**: See and manage all live and snapshot links in one place.
+
+### ☁️ Optional WebDAV Storage
+- **WebDAV Sync for PDFs**: Route PDF uploads to WebDAV instead of local storage.
+- **Secure Proxy**: Server-side WebDAV file access with auth shielding.
+- **Flexible Storage**: Toggle local vs WebDAV per user in Settings.
 
 ## 🛠 Tech Stack
-- **Frontend**: Next.js 15+, React, Tailwind CSS, Lucide Icons.
+- **Frontend**: Next.js 16+, React, Tailwind CSS, Lucide Icons.
 - **Editor**: ReactMarkdown, Remark-GFM, Rehype-Highlight (Highlight.js).
 - **Backend**: Next.js API Routes, BcryptJS for secure hashing, JWT via Jose.
-- **Data**: Local file-based JSON storage (Zero external DB dependency required for small-medium teams).
+- **Data**: Local file-based JSON storage (zero external DB dependency required for small-medium teams).
 - **Containerization**: Docker & Docker Compose.
 
 ## 🐳 Getting Started (Docker)
@@ -52,9 +65,9 @@ The easiest way to deploy Notedown is using Docker Compose.
    Open `http://localhost:3000` in your browser.
 
 ### Data Persistence
-Notedown is configured to persist all your data and uploaded images in two local directories:
+Notedown persists all your data and uploaded files in two local directories:
 - `data_storage/`: Stores your JSON "databases" (users, workspaces, notes).
-- `uploads_storage/`: Stores all pasted and uploaded images.
+- `uploads_storage/`: Stores all pasted and uploaded files (images and PDFs).
 
 ## 💻 Local Development
 
@@ -95,6 +108,16 @@ While you can use the interactive drag handles, you can also resize images manua
 ![My Image | 300](/uploads/example.png)      <!-- Lock width at 300px -->
 ![My Image =400x300](/uploads/example.png)   <!-- Set width and height -->
 ```
+
+## ⚙️ WebDAV Setup (Optional)
+
+Configure WebDAV in the Settings page to store PDFs remotely:
+
+1. Enable WebDAV.
+2. Provide URL, username, password, and base path.
+3. Toggle "Prefer WebDAV for PDFs" to route new PDF uploads remotely.
+
+If WebDAV is disabled, PDFs are stored locally under `uploads_storage/`.
 
 ## 📄 License
 This project is licensed under the [PolyForm Noncommercial License 1.0.0](LICENSE). 

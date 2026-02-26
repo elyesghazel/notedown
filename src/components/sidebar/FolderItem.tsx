@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { TreeNode as TreeNodeType } from "@/lib/tree";
 import { Space, Folder } from "@/lib/types";
 import { Button } from "@/components/ui/button";
@@ -24,11 +24,27 @@ interface FolderItemProps {
 }
 
 export function FolderItem({ node, space, folders, depth, children }: FolderItemProps) {
+    const storageKey = useMemo(() => `folder-expanded:${node.id}`, [node.id]);
     const [expanded, setExpanded] = useState(false);
     const [newFolderOpen, setNewFolderOpen] = useState(false);
     const [newDocOpen, setNewDocOpen] = useState(false);
     const [moveOpen, setMoveOpen] = useState(false);
     const [renameOpen, setRenameOpen] = useState(false);
+
+    useEffect(() => {
+        const saved = window.localStorage.getItem(storageKey);
+        if (saved !== null) {
+            setExpanded(saved === "1");
+        }
+    }, [storageKey]);
+
+    const toggleExpanded = () => {
+        setExpanded((prev) => {
+            const next = !prev;
+            window.localStorage.setItem(storageKey, next ? "1" : "0");
+            return next;
+        });
+    };
 
     const handleRename = async (newName: string) => {
         await api.renameFolder(node.id, newName);
@@ -95,7 +111,7 @@ export function FolderItem({ node, space, folders, depth, children }: FolderItem
                         className="group flex items-center justify-between hover:bg-muted/50 rounded-md cursor-pointer text-sm mb-0.5 pr-2 transition-colors"
                         style={{ paddingLeft: `${depth * 16}px` }}
                     >
-                        <div className="flex items-center flex-1 overflow-hidden py-1 h-full" onClick={() => setExpanded(!expanded)}>
+                        <div className="flex items-center flex-1 overflow-hidden py-1 h-full" onClick={toggleExpanded}>
                             {expanded ? <ChevronDown className="w-4 h-4 mr-1 text-muted-foreground shrink-0" /> : <ChevronRight className="w-4 h-4 mr-1 text-muted-foreground shrink-0" />}
                             <span className="truncate">{node.name}</span>
                         </div>
@@ -107,10 +123,10 @@ export function FolderItem({ node, space, folders, depth, children }: FolderItem
                                 </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="start">
-                                <DropdownMenuItem onClick={() => setNewDocOpen(true)}>
+                                <DropdownMenuItem onClick={() => { setExpanded(true); window.localStorage.setItem(storageKey, "1"); setNewDocOpen(true); }}>
                                     <FilePlus className="w-4 h-4 mr-2" /> New Document
                                 </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => setNewFolderOpen(true)}>
+                                <DropdownMenuItem onClick={() => { setExpanded(true); window.localStorage.setItem(storageKey, "1"); setNewFolderOpen(true); }}>
                                     <FolderPlus className="w-4 h-4 mr-2" /> New Subfolder
                                 </DropdownMenuItem>
                                 <DropdownMenuItem onClick={() => setRenameOpen(true)}>
@@ -127,10 +143,10 @@ export function FolderItem({ node, space, folders, depth, children }: FolderItem
                     </div>
                 </ContextMenuTrigger>
                 <ContextMenuContent>
-                    <ContextMenuItem onClick={() => setNewDocOpen(true)}>
+                    <ContextMenuItem onClick={() => { setExpanded(true); window.localStorage.setItem(storageKey, "1"); setNewDocOpen(true); }}>
                         <FilePlus className="w-4 h-4 mr-2" /> New Document
                     </ContextMenuItem>
-                    <ContextMenuItem onClick={() => setNewFolderOpen(true)}>
+                    <ContextMenuItem onClick={() => { setExpanded(true); window.localStorage.setItem(storageKey, "1"); setNewFolderOpen(true); }}>
                         <FolderPlus className="w-4 h-4 mr-2" /> New Subfolder
                     </ContextMenuItem>
                     <ContextMenuItem onClick={() => setRenameOpen(true)}>

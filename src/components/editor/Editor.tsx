@@ -2,6 +2,7 @@
 
 import { useRef, useEffect, useState, useMemo } from "react";
 import { useImagePaste } from "@/hooks/useImagePaste";
+import { api } from "@/lib/api-client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search, ChevronUp, ChevronDown, X } from "lucide-react";
@@ -15,6 +16,7 @@ interface EditorProps {
 export function Editor({ content, onChange }: EditorProps) {
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const pdfInputRef = useRef<HTMLInputElement>(null);
     const searchParams = useSearchParams();
 
     const insertTextAtCursor = (text: string) => {
@@ -32,6 +34,20 @@ export function Editor({ content, onChange }: EditorProps) {
     };
 
     const { onPaste, onDrop, processFile } = useImagePaste(insertTextAtCursor);
+
+    const handlePdfUpload = async (file: File) => {
+        const isPdf = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
+        if (!isPdf) return;
+        try {
+            const response = await api.uploadPdf(file);
+            const pdfUrl = response.url.startsWith("/uploads/")
+                ? `/api/uploads/${response.url.split("/").pop()}`
+                : response.url;
+            insertTextAtCursor(`[${file.name}](${pdfUrl})`);
+        } catch (e) {
+            console.error("[PDF_UPLOAD] Failed:", e);
+        }
+    };
 
     // Find functionality
     const [findOpen, setFindOpen] = useState(false);
@@ -157,6 +173,11 @@ export function Editor({ content, onChange }: EditorProps) {
         setSelection(start + 1, start + 1);
     };
 
+    const insertTable = () => {
+        const table = "| Column 1 | Column 2 |\n| --- | --- |\n|  |  |\n";
+        insertTextAtCursor(table);
+    };
+
     const handleFormatAction = (type: string) => {
         switch (type) {
             case "bold":
@@ -185,6 +206,9 @@ export function Editor({ content, onChange }: EditorProps) {
                 break;
             case "link":
                 insertLink();
+                break;
+            case "table":
+                insertTable();
                 break;
             default:
                 break;
@@ -228,11 +252,23 @@ export function Editor({ content, onChange }: EditorProps) {
         const handlePickImage = () => {
             fileInputRef.current?.click();
         };
+        const handlePickPdf = () => {
+            pdfInputRef.current?.click();
+        };
+        const handleInsertTemplate = (event: Event) => {
+            const custom = event as CustomEvent<{ content: string }>;
+            if (!custom.detail?.content) return;
+            insertTextAtCursor(custom.detail.content);
+        };
         window.addEventListener("editor:format", handleFormat as EventListener);
         window.addEventListener("editor:pick-image", handlePickImage);
+        window.addEventListener("editor:pick-pdf", handlePickPdf);
+        window.addEventListener("editor:insert-template", handleInsertTemplate as EventListener);
         return () => {
             window.removeEventListener("editor:format", handleFormat as EventListener);
             window.removeEventListener("editor:pick-image", handlePickImage);
+            window.removeEventListener("editor:pick-pdf", handlePickPdf);
+            window.removeEventListener("editor:insert-template", handleInsertTemplate as EventListener);
         };
     }, [content]);
 
@@ -364,6 +400,17 @@ export function Editor({ content, onChange }: EditorProps) {
                 onChange={(e) => {
                     const file = e.target.files?.[0];
                     if (file) processFile(file);
+                    e.currentTarget.value = "";
+                }}
+            />
+            <input
+                ref={pdfInputRef}
+                type="file"
+                accept="application/pdf,.pdf"
+                className="hidden"
+                onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) handlePdfUpload(file);
                     e.currentTarget.value = "";
                 }}
             />

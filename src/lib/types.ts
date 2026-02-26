@@ -4,6 +4,16 @@ export interface User {
     passwordHash: string;
     displayName?: string;
     createdAt: string;
+    webdav?: WebDavConfig;
+}
+
+export interface WebDavConfig {
+    enabled: boolean;
+    url: string;
+    username: string;
+    password: string;
+    basePath?: string;
+    preferPdf?: boolean;
 }
 
 export type PDFContentPosition = "left" | "center" | "right";
@@ -74,4 +84,24 @@ export interface PublishedDoc {
 export interface UploadedImage {
     filename: string;
     url: string;
+}
+
+export interface UploadedFile {
+    id: string;
+    filename: string;
+    url: string;
+    originalName: string;
+    mimeType: string;
+    size: number;
+    createdAt: string;
+    source?: "local" | "webdav";
+    remotePath?: string;
+}
+
+export interface MarkdownTemplate {
+    id: string;
+    name: string;
+    content: string;
+    createdAt: string;
+    updatedAt: string;
 }

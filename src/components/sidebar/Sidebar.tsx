@@ -6,7 +6,7 @@ import { api } from "@/lib/api-client";
 import { SpaceItem } from "./SpaceItem";
 import { NewSpaceDialog } from "../dialogs/NewSpaceDialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Zap, Loader2, ChevronLeft, ChevronRight, RefreshCw, Menu, Search, HelpCircle, Pencil, CheckSquare, Tag, Settings, LogOut, Camera } from "lucide-react";
+import { Zap, Loader2, ChevronLeft, ChevronRight, RefreshCw, Menu, Search, HelpCircle, Pencil, CheckSquare, Tag, Settings, LogOut, Camera, Globe, FileText, Plus, MoreHorizontal } from "lucide-react";
 import Link from "next/link";
 import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
 import { SearchDialog } from "../dialogs/SearchDialog";
 import { QuickLensDialog } from "../dialogs/QuickLensDialog";
+import { TemplateDialog } from "../dialogs/TemplateDialog";
 
 export function Sidebar() {
     const [mounted, setMounted] = useState(false);
@@ -59,6 +60,7 @@ export function Sidebar() {
         spaces ? `/api/documents?spaces=${spaceIds}` : null,
         () => Promise.all(spaces!.map(s => api.getDocuments(s.id))).then(r => r.flat())
     );
+    const { data: templates } = useSWR("/api/templates", api.getTemplates);
 
     const publishedMap = useMemo(() => {
         const map = new Map<string, { editable: boolean }>();
@@ -74,6 +76,9 @@ export function Sidebar() {
     const [reloading, setReloading] = useState(false);
     const [mobileOpen, setMobileOpen] = useState(false);
     const [quickLensOpen, setQuickLensOpen] = useState(false);
+    const [templateCreateOpen, setTemplateCreateOpen] = useState(false);
+    const [templateEditOpen, setTemplateEditOpen] = useState(false);
+    const [activeTemplate, setActiveTemplate] = useState<{ id: string; name: string; content: string } | null>(null);
     const pathname = usePathname();
 
     const openTasksCount = useMemo(() => {
@@ -105,6 +110,27 @@ export function Sidebar() {
         setReloading(true);
         await mutate(() => true, undefined, { revalidate: true });
         setTimeout(() => setReloading(false), 500);
+    };
+
+    const handleInsertTemplate = (content: string) => {
+        window.dispatchEvent(new CustomEvent("editor:insert-template", { detail: { content } }));
+    };
+
+    const handleCreateTemplate = async (name: string, content: string) => {
+        await api.createTemplate(name, content);
+        await mutate("/api/templates");
+    };
+
+    const handleUpdateTemplate = async (name: string, content: string) => {
+        if (!activeTemplate) return;
+        await api.updateTemplate(activeTemplate.id, { name, content });
+        await mutate("/api/templates");
+    };
+
+    const handleDeleteTemplate = async (id: string, name: string) => {
+        if (!confirm(`Delete template "${name}"?`)) return;
+        await api.deleteTemplate(id);
+        await mutate("/api/templates");
     };
 
     const closeMobileSidebar = () => setMobileOpen(false);
@@ -191,6 +217,69 @@ export function Sidebar() {
                 ))}
 
                 {activeWorkspaceId && <NewSpaceDialog workspaceId={activeWorkspaceId} />}
+
+                <div className="mt-6">
+                    <div className="flex items-center justify-between px-2 text-xs uppercase tracking-wider text-muted-foreground">
+                        <span>Templates</span>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6"
+                            onClick={() => setTemplateCreateOpen(true)}
+                            title="New template"
+                        >
+                            <Plus className="w-3.5 h-3.5" />
+                        </Button>
+                    </div>
+                    <div className="mt-2 space-y-1">
+                        {!templates && (
+                            <div className="px-2 text-xs text-muted-foreground">Loading templates...</div>
+                        )}
+                        {templates && templates.length === 0 && (
+                            <div className="px-2 text-xs text-muted-foreground">No templates yet</div>
+                        )}
+                        {templates && templates.map((template) => (
+                            <div key={template.id} className="group flex items-center justify-between px-2 py-1 rounded-md hover:bg-muted/50">
+                                <button
+                                    className="flex-1 text-left truncate text-sm"
+                                    onClick={() => handleInsertTemplate(template.content)}
+                                    title="Insert template"
+                                >
+                                    {template.name}
+                                </button>
+                                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-6 w-6"
+                                        onClick={() => handleInsertTemplate(template.content)}
+                                        title="Insert template"
+                                    >
+                                        <FileText className="w-3.5 h-3.5" />
+                                    </Button>
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button variant="ghost" size="icon" className="h-6 w-6" title="Template actions">
+                                                <MoreHorizontal className="w-3.5 h-3.5" />
+                                            </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="start">
+                                            <DropdownMenuItem onClick={() => {
+                                                setActiveTemplate(template);
+                                                setTemplateEditOpen(true);
+                                            }}>
+                                                Edit
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem onClick={() => handleDeleteTemplate(template.id, template.name)} className="text-destructive">
+                                                Delete
+                                            </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
             </ScrollArea>
 
             <div className="p-3 border-t space-y-2 hidden md:block">
@@ -246,6 +335,11 @@ export function Sidebar() {
                         <DropdownMenuItem asChild>
                             <Link href="/tags">
                                 <Tag className="w-4 h-4 mr-2" /> Tags
+                            </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild>
+                            <Link href="/published">
+                                <Globe className="w-4 h-4 mr-2" /> Published
                             </Link>
                         </DropdownMenuItem>
                         <DropdownMenuItem asChild>
@@ -400,6 +494,25 @@ export function Sidebar() {
                 onOpenChange={setQuickLensOpen}
                 defaultWorkspaceId={activeWorkspaceId}
                 defaultSpaceId={currentSpace?.id}
+            />
+            <TemplateDialog
+                open={templateCreateOpen}
+                onOpenChange={setTemplateCreateOpen}
+                title="New template"
+                confirmLabel="Create"
+                onConfirm={handleCreateTemplate}
+            />
+            <TemplateDialog
+                open={templateEditOpen}
+                onOpenChange={(open) => {
+                    setTemplateEditOpen(open);
+                    if (!open) setActiveTemplate(null);
+                }}
+                title="Edit template"
+                confirmLabel="Save"
+                initialName={activeTemplate?.name}
+                initialContent={activeTemplate?.content}
+                onConfirm={handleUpdateTemplate}
             />
         </>
     );

@@ -6,7 +6,7 @@ import { CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandItem, C
 import useSWR from "swr";
 import { api } from "@/lib/api-client";
 import { FileText, Folder as FolderIcon, Terminal, Zap, LogOut, Home, CheckSquare } from "lucide-react";
-import { Space, Document, Folder } from "@/lib/types";
+import { Space, Document, Folder, UploadedFile } from "@/lib/types";
 import { buildDocUrl, getFolderPath } from "@/lib/url";
 import { getTagColor } from "@/lib/utils";
 
@@ -16,10 +16,11 @@ export function SearchDialog() {
     const [debouncedSearch, setDebouncedSearch] = useState("");
     const router = useRouter();
 
-    const { data } = useSWR<{ spaces: Space[], documents: Document[], folders: Folder[] }>("/api/search", (url: string) => fetch(url).then(r => r.json()));
+    const { data } = useSWR<{ spaces: Space[], documents: Document[], folders: Folder[], uploads: UploadedFile[] }>("/api/search", (url: string) => fetch(url).then(r => r.json()));
     const spaces = data?.spaces || [];
     const documents = data?.documents || [];
     const folders = data?.folders || [];
+    const uploads = data?.uploads || [];
 
     useEffect(() => {
         const t = setTimeout(() => setDebouncedSearch(search), 150);
@@ -85,6 +86,17 @@ export function SearchDialog() {
             return doc.content.toLowerCase().includes(searchContent);
         });
     }, [documents, term, isCommandMode]);
+
+    const filteredPdfUploads = useMemo(() => {
+        if (isCommandMode) return [] as UploadedFile[];
+        const pdfs = uploads.filter((file) =>
+            file.mimeType === "application/pdf" || file.filename.toLowerCase().endsWith(".pdf")
+        );
+        if (!term) return pdfs;
+        return pdfs.filter((file) =>
+            file.originalName.toLowerCase().includes(term) || file.filename.toLowerCase().includes(term)
+        );
+    }, [uploads, term, isCommandMode]);
 
     return (
         <CommandDialog open={open} onOpenChange={setOpen} commandProps={{ shouldFilter: false }}>
@@ -171,6 +183,30 @@ export function SearchDialog() {
                                 );
                             })}
                         </CommandGroup>
+                        {filteredPdfUploads.length > 0 && (
+                            <CommandGroup heading="PDFs">
+                                {filteredPdfUploads.map((file) => {
+                                    const fileUrl = file.source === "local" && file.url.startsWith("/uploads/")
+                                        ? `/api/uploads/${file.filename}`
+                                        : file.url;
+                                    return (
+                                    <CommandItem
+                                        key={file.id}
+                                        onSelect={() => {
+                                            setOpen(false);
+                                            window.open(fileUrl, "_blank", "noopener,noreferrer");
+                                        }}
+                                    >
+                                        <div className="flex items-center w-full overflow-hidden">
+                                            <FileText className="mr-2 h-4 w-4 shrink-0" />
+                                            <span className="truncate">{file.originalName}</span>
+                                            <span className="ml-auto text-xs text-muted-foreground whitespace-nowrap">PDF</span>
+                                        </div>
+                                    </CommandItem>
+                                );
+                                })}
+                            </CommandGroup>
+                        )}
                     </>
                 )}
             </CommandList>
