@@ -7,8 +7,6 @@ services:
       - traefik_proxy
     env_file:
       - .env
-    environment:
-      - DATA_DIR=/app/.data
     volumes:
       - ./data_storage:/app/.data
       - ./uploads_storage:/app/public/uploads
